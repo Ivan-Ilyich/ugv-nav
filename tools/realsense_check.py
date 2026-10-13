@@ -37,7 +37,7 @@ import sys
 import threading
 import time
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -377,7 +377,7 @@ def main() -> None:
 
     run, logs, nominal = capture(args.seconds, args.width, args.height, args.fps, recording)
     summary: dict[str, Any] = {
-        "utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "utc": datetime.now(UTC).isoformat(timespec="seconds"),
         "versions": {**sdk_build(), "numpy": np.__version__},
         "requested_seconds": args.seconds,
         **run,

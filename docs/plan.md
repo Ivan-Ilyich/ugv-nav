@@ -139,6 +139,8 @@ USB-independent SSH and D435i enumeration passed on 1 October 2026
 ([result](hardware.md#checkpoint-usb-independent-ssh-then-d435i-enumeration)), and
 RGB, depth and IMU stream through a source-built librealsense 2.58.1 (RSUSB)
 with a stationary record/replay check ([results](hardware.md#streaming-setup-follows-enumeration)).
-Camera firmware was updated to 5.17.3.10 on 2 October. Next: IMU calibration,
+Camera firmware was updated to 5.17.3.10 on 2 October. For step 2, the UGV01
+protocol was researched from the firmware source and a bounded adapter with a
+simulator was written ([notes](ugv01-protocol.md)). Next: IMU calibration,
 then step 2 —
 identify the UGV01 transport and measure its stop/timeout behavior.

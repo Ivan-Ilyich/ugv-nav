@@ -8,21 +8,29 @@ perception or navigation.
 The project is also a learning exercise. Decisions should be understandable,
 experiments reproducible, and claims tied to recorded evidence.
 
-## Current status — 2 October 2026
+## Current status — 13 October 2026
 
-Repository foundation only; no robot application, dataset, trained model, or
-autonomous navigation implementation yet.
+Sensors and control software are in place; the robot has not driven yet.
 
-- **Jetson:** boots from NVMe; CUDA smoke test passed (4 September). On
-  1 October the software baseline was re-checked unchanged (before that day's
-  camera-software installs, which are recorded in docs/hardware.md), and the
-  Jetson runs untethered on Wi-Fi with key-based SSH, including after a reboot.
-- **D435i:** USB 3 on the Jetson; RGB, depth and IMU stream through a source
-  build of librealsense 2.58.1 (RSUSB backend), with a stationary record/replay
-  check, 1 October; firmware updated to 5.17.3.10, 2 October.
-- **Next:** IMU calibration, then talk to the UGV01 controller over serial.
-- **Still unverified:** depth quality in balcony light, stock-controller communication,
-  physical stop/timeout behavior, sustained onboard compute, and mobile power.
+- **Works:** Jetson runs untethered on Wi-Fi with key-based SSH; the D435i
+  streams RGB, depth and IMU on the Jetson (source-built librealsense 2.58.1,
+  RSUSB backend, firmware 5.17.3.10); a 20-minute streaming soak held 30 fps
+  with no lost frames at ~50 °C and ~5 W; the Jetson sits in its case with the
+  Wi-Fi antennas fitted.
+- **Software:** a typed UGV01 controller adapter (`src/ugv_nav/ugv01/`) with a
+  speed cap, 0.5 s command lease, stop priority and explicit re-arm, plus a
+  simulator; 111 tests, `mypy --strict` and `ruff` clean. Tested in simulation
+  only.
+- **Not yet:** the UGV01 controller has not been connected or driven; the
+  Jetson and power bank are not mounted on the robot (printed mount in
+  `hardware/jetson-bank-mount/`, parts arriving); no recording, perception or
+  navigation code yet; battery cells and the PD power cable not inspected.
+- **Next:** mount the Jetson and power bank, first read-only contact with the
+  UGV01 controller, then the first guarded drive with measured stop and timeout.
+- **Target for November:** classical obstacle avoidance on a short route in a
+  room, with repeated trials and recorded results. The ML comparison follows.
+
+A dated history is in [docs/log.md](docs/log.md).
 
 See the [hardware baseline and setup notes](docs/hardware.md),
 [implementation sequence](docs/plan.md), and [code reuse assessment](docs/reuse.md).
@@ -37,7 +45,7 @@ See the [hardware baseline and setup notes](docs/hardware.md),
 | Kingston NV3 1 TB NVMe | Jetson system and local recordings |
 | UGREEN PB205, X553 charger, purchased PD-to-barrel cable | Candidate mobile-power setup; integration untested |
 | Three Molicel P28A cells | UGV power components; condition and installation unverified |
-| Jetson enclosure | Candidate onboard packaging; mounting and thermals unverified |
+| Jetson enclosure | Assembled, Jetson boots in it; printed rover mount ordered (`hardware/jetson-bank-mount/`), thermals unverified |
 | MacBook Pro M4, 48 GB unified memory | Primary development, annotation, local ML experiments |
 | ThinkPad P50 running Ubuntu | Hardware integration and Jetson support |
 
@@ -59,13 +67,27 @@ architecture, or dataset has been selected; see the [assessment](docs/plan.md#ml
 
 ## Working locally
 
-The only runnable piece so far is `tools/realsense_check.py`, a stationary
-camera check run on the Jetson (setup and results in
-[docs/hardware.md](docs/hardware.md#streaming-setup-follows-enumeration)). Add a
-small module and its dependencies when the next implementation task needs them.
-Keep recordings, datasets, model weights, credentials, network configuration,
-and private source material outside version control. Track sanitized
-instructions, manifests, and results instead.
+Python code uses Python 3.12 and [uv](https://docs.astral.sh/uv/) with the
+pinned `uv.lock`. On the Mac: `uv run pytest -q`, `uv run mypy` and
+`uv run ruff check src tests tools`.
 
-See [AGENTS.md](AGENTS.md) for working conventions. Hardware configuration and
-movement belong to explicit commissioning tasks.
+- `src/ugv_nav/ugv01/`: UGV01 controller adapter (bounded wheel-speed commands,
+  command lease and stop handling, feedback parsing) with a simulator;
+  [protocol notes](docs/ugv01-protocol.md). Tested only in simulation so far.
+- `tools/ugv01_probe.py`: read-only first-contact check for a commissioning
+  session; it listens, sends only stop and feedback requests, and prints
+  redacted replies. Not yet run on hardware.
+- `tools/realsense_check.py` and `tools/jetson_soak.py`: camera stream check and
+  20-minute soak, run on the Jetson in its own venv (setup and results in
+  [docs/hardware.md](docs/hardware.md#streaming-setup-follows-enumeration)).
+
+Planned layout (plain Python, no ROS): `ugv01/` control, `sensors/` camera,
+`recording/` write and replay, `perception/` depth to obstacles, `nav/` pose
+and planner, `cli/` teleop/record/replay/drive. Add a module and its
+dependencies when the next implementation task needs them. Keep recordings, datasets, model weights, credentials, network
+configuration, and private source material outside version control. Track
+sanitized instructions, manifests, and results instead.
+
+See [AGENTS.md](AGENTS.md) for working conventions and [CLAUDE.md](CLAUDE.md)
+for current decisions and the plan. The project is developed with an AI coding
+assistant; design decisions, tests and hardware work are the owner's.

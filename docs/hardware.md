@@ -43,11 +43,20 @@ Reconciled on 29 September; rows updated with the 1–2 October results.
 | P50 | Ubuntu 22.04 x86_64 and SDK Manager used in September report; reachable by SSH on the home network, 1 October | Package state not inventoried |
 | Jetson network access | Key-based SSH over Wi-Fi with Ethernet and USB networking disconnected, surviving a reboot; USB device-mode SSH from the P50 works on one P50 port (1 October) | Wi-Fi range and robustness away from the router and on the moving robot |
 | D435i (`999AFR` kit) | USB 3 enumeration; stationary indoor RGB/depth streaming (V4L and RSUSB) and IMU (RSUSB only), 1 October; firmware updated 5.15.1.55 → 5.17.3.10, 2 October | IMU calibration, depth quality in balcony light, rover mount |
-| UGV01 stock controller/drivetrain | Available; no physical test artifact located | Controller/firmware identity, transport/protocol, feedback, bounded control, stopping and watchdog |
+| UGV01 stock controller/drivetrain | Available; protocol researched from firmware source and an adapter tested in simulation, 2 October ([notes](ugv01-protocol.md)) | Which firmware the board runs, host link and port, feedback, bounded control, stopping and watchdog — all unmeasured |
 | Three Molicel P28A cells | Available; earlier inventory identifies flat-top unprotected cells | Condition, approved installation/charging and actual pack use |
-| PB205 / X553 / PD-to-barrel cable | Available; cable previously identified as Adafruit 5451 | Exact assembled power path, negotiated output, fit/polarity, load and runtime checks |
-| Jetson enclosure | Available; earlier inventory identifies Waveshare 25334 | Assembly, mounting, thermal behavior; bundled CSI bracket reported not to fit D435i |
+| PB205 / X553 / PD-to-barrel cable | Available; cable previously identified as Adafruit 5451. Bank confirmed from its label as UGREEN PB205, P/N 90597A (official size 160 × 80.8 × 26.7 mm, 513 g); display and button on a long side, button ends ~40 mm from the port end (measured 13 October) | Exact assembled power path, negotiated output, fit/polarity, load and runtime checks |
+| Jetson enclosure | Waveshare 25334 (JETSON-ORIN-CASE-A) assembled with both IPEX4-to-SMA antennas on the Wi-Fi card (Main and Aux); Jetson boots in it and SSH works (12 October). Two threaded holes on the bottom centre line, ~65 mm apart (tape measure) | Rover mount (printed tray + lid ordered, `hardware/jetson-bank-mount/`), thermal behavior in the case; bundled CSI bracket reported not to fit D435i |
 | MacBook Pro M4 / 48 GB | Owner-provided development-machine inventory | ML environment and experiment runtime not benchmarked |
+
+**Onboard mounting (designed 12 October, parts ordered 13 October).** A printed
+two-part stack sits on the two 1020 rails (170 mm centres, per Waveshare's
+drawing): `tray.stl` bolts to the rails with M4 drop-in T-nuts and holds the
+power bank, ports to the rear; `lid.stl` screws onto four tray bosses and
+carries the Jetson case through its two bottom holes, ports and antennas to
+the rear. Nothing touches the deck. Printed locally in PETG; files, hardware
+list and assembly steps in `hardware/jetson-bank-mount/README.md`. Fit is
+unverified until the parts arrive.
 
 The mini tripod is suitable for the proposed stationary camera check; it does
 not establish a secure rover mount. No GNSS, lidar, working wheel odometry, or
@@ -360,7 +369,44 @@ timestamps more than 1 s ahead of their arrival (`future_stamped`).
   SDK reports, not the raw tables byte for byte; no release notes specific to
   5.17.3.10 were found.
 
-### IMU calibration plan (prepared 2 October 2026; not yet run)
+**Soak test, 2 October 2026 — 20 minutes of camera streaming with CPU alignment.**
+`tools/jetson_soak.py --minutes 20` (13:34–13:54 UTC; Jetson bare on the desk,
+stock fan, 25 W mode, official supply): depth + colour 848×480@30, gyro 200 Hz,
+accel 100 Hz, every depth frame aligned to colour on the CPU (`rs.align`, no
+CUDA in this build), no recording. Steady state (first 10 s interval excluded):
+
+| Measure | Result |
+| --- | --- |
+| Frames | depth/colour 35,674 each (29.98 fps), gyro 238,100 (200.1 Hz), accel 119,167 (100.1 Hz) |
+| Frame-number gaps / counter resets | 0 / 0 on all streams |
+| Longest interval | depth/colour 33.4 ms, gyro 5.0 ms, accel 10.0 ms |
+| Frame sets not processed in time (queue drops) | 0; processing held 30 per second (28.8 in the first interval) |
+| Alignment time per frame set, p95 | 22.3–22.9 ms per interval |
+| Junction temperature (`tj`) | 48.2 °C at start → 50.0 °C max, flat after ~15 min |
+| Board input power (`VDD_IN`, tegrastats) | 5.2 W median, 5.25 W max |
+| CPU load / GPU load / RAM | ~15 % average (max 20 %) / 0 % / 1.2 GB |
+| Clocks (lowest seen) | CPU 730 MHz, GPU 306 MHz (load-driven scaling) |
+
+Start-up IMU samples set aside: 11. Limits: light load (no GPU work, no
+recording), room temperature not measured, no enclosure; a heavier soak with
+the eventual perception model is still needed before claiming sustained
+compute.
+
+### IMU calibration plan (prepared 2 October 2026; deferred 9 October)
+
+**Deferred on 9 October 2026.** The camera applies the neutral table today
+(identity scale, zero offsets; raw |g| 9.74 m/s² against 9.81, ~0.7 % scale
+error; offsets unknown). Pose pipelines estimate IMU offsets online, so the
+practical cost of skipping the calibration is small at 0.1 m/s. Interim step:
+record the at-rest gyro offset and per-axis gravity in a few poses with
+`tools/realsense_check.py` (no write), keep them here as a "before" reference,
+and subtract the gyro offset at start-up in software. Note the calibration state
+in every recording manifest. Holder when we do calibrate: the retail box's foam
+tray (square by design), cable through the lid seam (~1.5° lid tilt, within the
+tool's ~5° acceptance) or a small notch. The tool accepts a pose when the
+accelerometer vector is within 0.87 m/s² of the target and needs 3 s of
+stillness; only the face that is down matters, rotation about the vertical is
+not sensed.
 
 Tool: `tools/rs-imu-calibration/rs-imu-calibration.py` from the v2.58.1 source
 tree, run as a patched copy outside the tree (research and an independent check

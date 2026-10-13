@@ -8,13 +8,12 @@
   more cautious or formal.
   Explain consequential engineering choices briefly, including their limits.
 - Inspect Git status and relevant files before editing; preserve existing work.
-  Do not commit or push unless requested.
+  Commit finished work in small logical commits; do not push unless requested.
 - Treat AMP as a read-only technical reference. Its historical architecture,
   governance, and plans are not requirements here.
-- Hardware configuration, firmware changes, power changes, and physical movement
-  require an explicitly scoped commissioning task. Local software work may
-  proceed within the requested task. Do not purchase or provision paid services
-  without explicit authorization.
+- The owner does the physical steps (wiring, power, flashing, driving); software
+  prepares them, keeps the robot inside declared bounds, and records what
+  happened. Do not purchase or provision paid services without authorization.
 
 ## Implementation
 
@@ -27,8 +26,7 @@
 - Make units, coordinate frames, timestamps, source mode, and validity explicit
   in sensor/command contracts. Use monotonic time for local command deadlines.
 - Physical control must have bounded commands, validated inputs, stop behavior,
-  and timeout/link-loss handling. A host process alone cannot establish stopping
-  after host failure; verify the controller-side behavior before relying on it.
+  and timeout/link-loss handling. The guard is the only path to the motors.
 - Add dependencies only when used. Check target Python/OS/architecture and SDK
   compatibility, pin a tested environment, and document the install/run path.
 - Record source revision, source paths, license/attribution, and changes when

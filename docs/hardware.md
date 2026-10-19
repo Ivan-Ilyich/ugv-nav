@@ -471,5 +471,14 @@ returns the board's reply in the HTTP body. Tracks lifted.
 
 No `temp` key in `T:1001` suggests `ugv_base_general` ≤ 0.90. OLED voltage
 (11.11 V) and polled voltage (11.82 V) differ; cause not checked.
-Next: round-trip latency, board joins the home 2.4 GHz network (`T:407`, mode 3,
-with a non-default AP password), HTTP transport for the adapter.
+**Home network (same day):** `T:407` (mode 3 = access point + station, with a
+non-default AP password) joined the board to the home router's 2.4 GHz network;
+the address is in `CLAUDE.local.md`. `T:407` restarts the board's Wi-Fi at once
+and blocks up to 15 s while joining, so the HTTP reply never arrives; that is
+expected. A first attempt sent the AP password under a wrong key, which leaves
+the access point without a password — check the reply of `T:405` afterwards.
+From the Mac on the home network, `T:130` returned `T:1001` (11.59 V); five
+round trips took 19, 27, 18, 19 and 50 ms (median 19 ms).
+
+The adapter now has `HttpTransport` (`src/ugv_nav/ugv01/transport.py`) and the
+probe takes `--http <host>`; protocol, guard and lease are unchanged.

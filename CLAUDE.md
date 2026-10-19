@@ -123,7 +123,8 @@ reviewer, whichever way it comes out:
   20-min camera soak OK; Jetson in its case with antennas; UGV01 adapter with
   speed cap, command lease, stop priority and simulator — 111 tests, mypy
   strict, ruff clean.
-- **19 Oct:** mount assembled; UGV01 first contact passed over Wi-Fi/HTTP (see `docs/log.md`).
+- **19 Oct:** mount assembled; UGV01 first contact passed over Wi-Fi/HTTP; board on the home
+  network (~19 ms round trip); `HttpTransport` added (see `docs/log.md`).
 - **Not yet done:** the UGV01 has not been driven; the Jetson and
   power bank are not on the robot (printed mount arriving 14 Oct); no recording
   tool, no perception, no navigation; batteries and PD cable not inspected.
@@ -168,19 +169,17 @@ live; one config file per test (speed cap, obstacle distance, goal).
 
 ## Next steps
 
-1. **UGV01 on home Wi-Fi:** `T:407` (mode 3, home 2.4 GHz SSID, non-default AP
-   password), power-cycle, read the IP from the OLED `ST:` line, put it in
-   `CLAUDE.local.md`, reserve it in the router. Measure HTTP round-trip time.
-2. **HTTP transport** in `src/ugv_nav/ugv01/transport.py` (request/response via
-   `GET /js?json=…`; the reply body is the board's answer) with tests; add
-   `--http <ip>` to `tools/ugv01_probe.py`. Protocol, guard and lease unchanged.
-   Note: over Wi-Fi a link drop means the host cannot send stop; the board's
-   3 s heartbeat is the backstop (≤ ~30 cm at 0.10 m/s) — measure it.
-3. **First guarded drive**, tracks lifted, then on the floor: measure stop time
-   and distance for host stop, 3 s heartbeat expiry, and Wi-Fi loss.
-4. Gyro z offset (~4.0 at rest): estimate at start-up and subtract.
-5. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
-6. `sensors/` + `recording/` (week 2 of the plan) in parallel.
+1. **Probe over Wi-Fi from the Jetson:** sync the repo, then
+   `tools/ugv01_probe.py --http <board address from CLAUDE.local.md>` with tracks lifted.
+   Run `uv run pytest -q && uv run mypy` on the Mac first.
+2. **First guarded drive**, tracks lifted, then on the floor: a small
+   `tools/ugv01_drive_check.py` through `UGV01Client` + `HttpTransport` (0.10 m/s cap,
+   0.5 s lease). Measure stop time and distance for host stop, lease expiry,
+   3 s firmware heartbeat after the host goes silent, and Wi-Fi loss.
+3. Gyro z offset (~4.0 at rest): estimate at start-up and subtract.
+4. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
+5. `sensors/` + `recording/` (week 2 of the plan) in parallel.
+6. Reserve the board's address in the router.
 
 ## Roadmap after 19 November (detail in `docs/plan.md`)
 

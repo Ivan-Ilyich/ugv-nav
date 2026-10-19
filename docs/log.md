@@ -98,3 +98,6 @@ Detailed measurements live in `docs/hardware.md`.
   point, `T:130` returned `T:1001` (11.82 V, level) and `T:126` returned IMU
   data; gyro z offset ≈ 4.0 at rest, magnetometer inactive. Details in
   `docs/hardware.md`.
+- **19 Oct, later:** board joined the home 2.4 GHz network (`T:407`, AP password
+  changed from the default); HTTP round trip from the Mac 18–50 ms, median 19 ms.
+  Added `HttpTransport` and `--http` to the probe (134 tests passing).

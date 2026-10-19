@@ -467,7 +467,7 @@ returns the board's reply in the HTTP body. Tracks lifted.
 | --- | --- | --- |
 | `{"T":1,"L":0,"R":0}` (stop) | sent | — |
 | `{"T":130}` | `T:1001` L 0, R 0, r −1.06°, p 0.39°, y `"null"`, v 11.82 V | Link works; robot level; ~3.94 V/cell. Yaw is not filled in `T:1001`. |
-| `{"T":126}` | `T:1002` r −1.03, p 0.45, y −179.45; ax −7.4, ay −18.1, az 982.2; gx 0.12, gy 0.10, gz 4.00; mx 12, my 0, mz 0; temp 0 | Gravity on z (≈981, units look like cm/s²). **Gyro z offset ≈ 4.0 at rest** → subtract at start-up. Magnetometer looks inactive. No temperature. |
+| `{"T":126}` | `T:1002` r −1.03, p 0.45, y −179.45; ax −7.4, ay −18.1, az 982.2; gx 0.12, gy 0.10, gz 4.00; mx 12, my 0, mz 0; temp 0 | Gravity on z (≈981, units look like cm/s²). Gyro z read 4.0 at rest in this one sample; later samples did not repeat it (see the probe from the Jetson below). Magnetometer looks inactive. No temperature. |
 
 No `temp` key in `T:1001` suggests `ugv_base_general` ≤ 0.90. OLED voltage
 (11.11 V) and polled voltage (11.82 V) differ; cause not checked.
@@ -482,3 +482,46 @@ round trips took 19, 27, 18, 19 and 50 ms (median 19 ms).
 
 The adapter now has `HttpTransport` (`src/ugv_nav/ugv01/transport.py`) and the
 probe takes `--http <host>`; protocol, guard and lease are unchanged.
+
+**Probe from the Jetson (19 October 2026, 13:32 local).** Repo synced to the
+Jetson by rsync (git `262122c` plus uncommitted docs); `pyserial 3.5` added to
+the existing `~/ugv-nav/.venv` (Python 3.12.3). Both on the home Wi-Fi, robot
+standing level and still. Command:
+
+    PYTHONPATH=src .venv/bin/python tools/ugv01_probe.py --http <board address>
+
+| Measure | Value |
+| --- | --- |
+| Requests / failed / overflowed replies | 14 / **0** / 0 |
+| Valid `T:1001` / invalid / unsolicited | 10 / 0 / 0 (exit status 0) |
+| Round trip, probe-reported | last 16 ms, max 101 ms |
+| Round trip, from print timestamps (gap − 0.2 s spacing) | 11–101 ms, median ≈ 18 ms; the two slowest are the first two requests, two more at ~60 ms |
+| Battery `v` | 11.52 V (tilt check minutes earlier: 11.54 V; earlier today 11.82 V, 11.59 V) |
+| `T:139` speed rate | L 1, R 1 |
+| `T:1001` roll / pitch | −1.48 to −1.67° / −0.01 to −0.21° |
+| `T:1001` keys | `T L R r p v y`; `y` is the string `"null"` |
+
+**Tilt check (same session, from the Mac, robot level).** Background: right
+after the `T:407` call above (which blocks the firmware loop up to 15 s), the
+owner saw a level robot report r −20.4°, p −25.9°; before it, r −1.1°,
+p 0.4°. Now: 5 × (`T:130`, 1 s, `T:126`, 1 s). Accelerometer angles from
+`T:1002`: roll = atan2(ay, az), pitch = atan2(−ax, √(ay² + az²)).
+
+| # | `T:1001` r | `T:1001` p | `T:1002` r | `T:1002` p | accel roll | accel pitch | \|a\| |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 | −1.63 | −0.13 | −1.53 | −0.04 | −1.56 | 0.06 | 987.9 |
+| 2 | −1.53 | −0.07 | −1.49 | −0.11 | −1.47 | −0.11 | 988.8 |
+| 3 | −1.50 | −0.09 | −1.52 | −0.10 | −1.48 | −0.05 | 986.4 |
+| 4 | −1.53 | −0.04 | −1.53 | −0.16 | −1.53 | 0.00 | 986.9 |
+| 5 | −1.53 | −0.24 | −1.57 | −0.09 | −1.50 | 0.00 | 988.4 |
+
+The board's roll/pitch agree with the accelerometer within **0.24°** (limit
+2°): the −20°/−26° reading was transient, most likely the board's attitude
+filter catching up after the blocked loop (not verified). Treat `r`/`p` as
+unreliable for some seconds after any blocking command; how long is not measured.
+Round trips 21–170 ms (first request slowest).
+
+**Gyro z at rest is noise, not a fixed offset.** Seven single readings today:
+4.00, −0.44, 1.69, −1.81, 0.50, −0.56, −1.12 (gx, gy similar, up to −2.3).
+Estimate any offset as a mean over a few seconds at start-up, not from one
+sample.

@@ -125,6 +125,8 @@ reviewer, whichever way it comes out:
   strict, ruff clean.
 - **19 Oct:** mount assembled; UGV01 first contact passed over Wi-Fi/HTTP; board on the home
   network (~19 ms round trip); `HttpTransport` added (see `docs/log.md`).
+  Probe passed **from the Jetson** over Wi-Fi (0 of 14 requests failed, median
+  ≈ 18 ms); board roll/pitch match the accelerometer within 0.24°.
 - **Not yet done:** the UGV01 has not been driven; the Jetson and
   power bank are not on the robot (printed mount arriving 14 Oct); no recording
   tool, no perception, no navigation; batteries and PD cable not inspected.
@@ -169,14 +171,16 @@ live; one config file per test (speed cap, obstacle distance, goal).
 
 ## Next steps
 
-1. **Probe over Wi-Fi from the Jetson:** sync the repo, then
-   `tools/ugv01_probe.py --http <board address from CLAUDE.local.md>` with tracks lifted.
-   Run `uv run pytest -q && uv run mypy` on the Mac first.
-2. **First guarded drive**, tracks lifted, then on the floor: a small
+1. **First guarded drive**, tracks lifted, then on the floor: a small
    `tools/ugv01_drive_check.py` through `UGV01Client` + `HttpTransport` (0.10 m/s cap,
-   0.5 s lease). Measure stop time and distance for host stop, lease expiry,
-   3 s firmware heartbeat after the host goes silent, and Wi-Fi loss.
-3. Gyro z offset (~4.0 at rest): estimate at start-up and subtract.
+   0.5 s lease), run from the Jetson (repo synced there by rsync without
+   `--delete`; venv `~/ugv-nav/.venv` has pyserial). Measure stop time and
+   distance for host stop, lease expiry, 3 s firmware heartbeat after the host
+   goes silent, and Wi-Fi loss.
+2. Gyro bias: single samples at rest swing ±2–4 deg/s, so average a few seconds
+   at start-up and subtract. Board `r`/`p` can be wrong for a while after a
+   blocking command (`T:407`); don't trust them right after one.
+3. Tidy the 10 ruff findings (mount scripts and `tests/test_http_transport.py`).
 4. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
 5. `sensors/` + `recording/` (week 2 of the plan) in parallel.
 6. Reserve the board's address in the router.

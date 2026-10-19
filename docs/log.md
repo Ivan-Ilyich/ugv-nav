@@ -101,3 +101,11 @@ Detailed measurements live in `docs/hardware.md`.
 - **19 Oct, later:** board joined the home 2.4 GHz network (`T:407`, AP password
   changed from the default); HTTP round trip from the Mac 18–50 ms, median 19 ms.
   Added `HttpTransport` and `--http` to the probe (134 tests passing).
+- **19 Oct, afternoon:** **probe passed from the Jetson** over the home Wi-Fi
+  (repo rsynced, pyserial added to the existing venv): 14 HTTP requests,
+  0 failed, 10 valid `T:1001`, round trip median ≈ 18 ms (max 101 ms, first
+  requests), battery 11.52 V. **Tilt check:** the board's roll/pitch now agree
+  with the raw accelerometer within 0.24° (robot level, r ≈ −1.5°, p ≈ −0.1°);
+  the −20°/−26° seen right after `T:407` was transient. Gyro z at rest varies
+  −1.8 to +4.0 between single samples, so the "offset ≈ 4.0" was noise.
+  Details in `docs/hardware.md`.

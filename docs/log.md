@@ -91,3 +91,10 @@ Detailed measurements live in `docs/hardware.md`.
   19 Nov). Decisions: target classical obstacle avoidance in the room by then;
   plain Python package, no ROS; push now, go public at the first measured
   drive (5 Nov at the latest); keep `CLAUDE.md`/`AGENTS.md` but short.
+- **19 Oct:** mount assembled on the rails with the kit's own T-nuts (case screws
+  hand-snug until the hole depth is measured). The mount covers the Jetson's
+  40-pin header → decided the Jetson–UGV01 link is **Wi-Fi/HTTP** (`/js`
+  endpoint). **First contact passed:** from the Mac on the board's access
+  point, `T:130` returned `T:1001` (11.82 V, level) and `T:126` returned IMU
+  data; gyro z offset ≈ 4.0 at rest, magnetometer inactive. Details in
+  `docs/hardware.md`.

@@ -54,3 +54,13 @@ square, which is fine for printed parts.
 Sources for the dimensions: Waveshare case drawing (122 x 95 x 45), UGV01
 drawing (rails 170 mm centres, 144 mm long), UGREEN PB205 spec (160 x 80.8 x 26.7),
 and the case's bottom holes measured at ~65 mm.
+
+## As built (19 October 2026)
+
+- Tray bolted to the rails with the UGV01 kit's own drop-in T-nuts and screws.
+- The lid printed pocket side up; fitted pocket side down, which is correct.
+- Some of the suggested screw sizes were too big in practice; only M3 worked.
+- The two case screws are only hand-snug: the case's bottom holes are open
+  through to the board, so a too-long screw can touch it. Before tightening,
+  measure how deep the hole goes and use a screw that ends short of that, or
+  add a washer under the head.

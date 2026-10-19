@@ -123,7 +123,8 @@ reviewer, whichever way it comes out:
   20-min camera soak OK; Jetson in its case with antennas; UGV01 adapter with
   speed cap, command lease, stop priority and simulator — 111 tests, mypy
   strict, ruff clean.
-- **Not yet done:** the UGV01 has never been talked to or driven; the Jetson and
+- **19 Oct:** mount assembled; UGV01 first contact passed over Wi-Fi/HTTP (see `docs/log.md`).
+- **Not yet done:** the UGV01 has not been driven; the Jetson and
   power bank are not on the robot (printed mount arriving 14 Oct); no recording
   tool, no perception, no navigation; batteries and PD cable not inspected.
 - Full dated history: `docs/log.md`.
@@ -167,17 +168,19 @@ live; one config file per test (speed cap, obstacle distance, goal).
 
 ## Next steps
 
-1. **Today:** push the commits (`git push -u origin main` from the Mac); run
-   `uv run pytest -q` first.
-2. **14 Oct:** mount arrives → assemble per `hardware/jetson-bank-mount/README.md`
-   (screws listed there); inspect the three P28A cells (no dents, matching
-   voltage) and the PD-to-barrel cable label (5451 = 15 V vs 5452 = 20 V);
-   first Jetson boot from the power bank, note the negotiated voltage/behaviour.
-3. **UGV01 first contact:** host link decision (40-pin UART vs board USB-C),
-   OLED firmware line at power-on, run `tools/ugv01_probe.py` with tracks off
-   the ground; then first guarded drive and the stop/timeout measurement.
-4. IMU reference readings when convenient (deferred; see `docs/hardware.md`).
-5. Home-network maintenance (see `CLAUDE.local.md`).
+1. **UGV01 on home Wi-Fi:** `T:407` (mode 3, home 2.4 GHz SSID, non-default AP
+   password), power-cycle, read the IP from the OLED `ST:` line, put it in
+   `CLAUDE.local.md`, reserve it in the router. Measure HTTP round-trip time.
+2. **HTTP transport** in `src/ugv_nav/ugv01/transport.py` (request/response via
+   `GET /js?json=…`; the reply body is the board's answer) with tests; add
+   `--http <ip>` to `tools/ugv01_probe.py`. Protocol, guard and lease unchanged.
+   Note: over Wi-Fi a link drop means the host cannot send stop; the board's
+   3 s heartbeat is the backstop (≤ ~30 cm at 0.10 m/s) — measure it.
+3. **First guarded drive**, tracks lifted, then on the floor: measure stop time
+   and distance for host stop, 3 s heartbeat expiry, and Wi-Fi loss.
+4. Gyro z offset (~4.0 at rest): estimate at start-up and subtract.
+5. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
+6. `sensors/` + `recording/` (week 2 of the plan) in parallel.
 
 ## Roadmap after 19 November (detail in `docs/plan.md`)
 

@@ -55,8 +55,10 @@ drawing): `tray.stl` bolts to the rails with M4 drop-in T-nuts and holds the
 power bank, ports to the rear; `lid.stl` screws onto four tray bosses and
 carries the Jetson case through its two bottom holes, ports and antennas to
 the rear. Nothing touches the deck. Printed locally in PETG; files, hardware
-list and assembly steps in `hardware/jetson-bank-mount/README.md`. Fit is
-unverified until the parts arrive.
+list and assembly steps in `hardware/jetson-bank-mount/README.md`. Assembled 19 October: the tray uses the
+UGV01 kit's own drop-in T-nuts and screws. Open issue: the two case screws are
+left loose, because the case's bottom holes have no stop and a long screw can
+reach the board.
 
 The mini tripod is suitable for the proposed stationary camera check; it does
 not establish a secure rover mount. No GNSS, lidar, working wheel odometry, or
@@ -452,3 +454,22 @@ on 2 October; nothing was written to the camera):
   if needed. Whether a later firmware update keeps the IMU table is unknown, so
   re-check intrinsics after any firmware change.
 
+
+## UGV01 first contact (19 October 2026)
+
+Read-only, over Wi-Fi (the printed mount covers the Jetson's 40-pin header, so
+the host link is wireless). Board OLED at power-on: `AP: UGV`, `ST: OFF`,
+`V: 11.11`. Mac joined the board's access point and used the firmware's HTTP
+endpoint `GET http://192.168.4.1/js?json=<command>`, which runs the command and
+returns the board's reply in the HTTP body. Tracks lifted.
+
+| Request | Reply | Reading |
+| --- | --- | --- |
+| `{"T":1,"L":0,"R":0}` (stop) | sent | — |
+| `{"T":130}` | `T:1001` L 0, R 0, r −1.06°, p 0.39°, y `"null"`, v 11.82 V | Link works; robot level; ~3.94 V/cell. Yaw is not filled in `T:1001`. |
+| `{"T":126}` | `T:1002` r −1.03, p 0.45, y −179.45; ax −7.4, ay −18.1, az 982.2; gx 0.12, gy 0.10, gz 4.00; mx 12, my 0, mz 0; temp 0 | Gravity on z (≈981, units look like cm/s²). **Gyro z offset ≈ 4.0 at rest** → subtract at start-up. Magnetometer looks inactive. No temperature. |
+
+No `temp` key in `T:1001` suggests `ugv_base_general` ≤ 0.90. OLED voltage
+(11.11 V) and polled voltage (11.82 V) differ; cause not checked.
+Next: round-trip latency, board joins the home 2.4 GHz network (`T:407`, mode 3,
+with a non-default AP password), HTTP transport for the adapter.

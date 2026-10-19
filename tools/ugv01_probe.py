@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""READ-ONLY first-contact probe for the UGV01 driver board over serial.
+"""READ-ONLY first-contact probe for the UGV01 driver board over serial or Wi-Fi.
 
 Sends no motion command. The only bytes it writes are STOP
 (``{"T":1,"L":0.0,"R":0.0}``) and one-shot feedback requests (T:139 speed
@@ -30,10 +30,16 @@ newer than 0.90. ``unsolicited_base_feedback`` counts valid T:1001 that arrived
 before the probe sent anything: if it is not zero, the T:131 stream or another
 host is active, and polled feedback is no proof that the host's bytes arrive.
 
-This is a hardware action: run it only within a scoped commissioning task,
-with the tracks off the ground. It has not been run yet. The port name is
-unverified (40-pin UART on the Jetson or the board's USB-C CP2102):
+Over Wi-Fi (``--http``) the same commands go to the firmware's HTTP endpoint
+``GET http://<host>/js?json=<command>``. There is no boot text, echo or
+unsolicited output on that path, so the passive listen is skipped, and the
+summary adds request counts and round-trip times instead of raw serial counts.
 
+This is a hardware action: run it with the tracks off the ground. Wi-Fi
+first contact (Mac, curl, 19 October 2026) succeeded; the serial route is
+unverified (the printed mount covers the Jetson's 40-pin header):
+
+    uv run python tools/ugv01_probe.py --http <board address>
     uv run python tools/ugv01_probe.py --port <serial device>
 
 Exit status: 0 if at least one valid T:1001 arrived, 2 otherwise.
@@ -61,7 +67,7 @@ from ugv_nav.ugv01.protocol import (
     parse_feedback_line,
     redact_for_log,
 )
-from ugv_nav.ugv01.transport import SerialTransport, Transport
+from ugv_nav.ugv01.transport import HttpTransport, SerialTransport, Transport
 
 BOOT_MARKERS = ("[missionPlay finished.]", "[missionPlay abort.]")
 
@@ -175,12 +181,21 @@ def bounded[N: (int, float)](kind: type[N], low: N, high: N) -> Callable[[str], 
 
 
 def run_probe(
-    transport: Transport, *, listen_s: float, samples: int, interval_s: float, log: ProbeLog
+    transport: Transport,
+    *,
+    listen_s: float,
+    samples: int,
+    interval_s: float,
+    log: ProbeLog,
+    expect_boot_text: bool = True,
 ) -> None:
-    """Listen first, then send only STOP and one-shot feedback requests; always end with STOP."""
+    """Listen first, then send only STOP and one-shot feedback requests; always end with STOP.
+
+    ``expect_boot_text=False`` (HTTP) skips the boot-marker warning: that path never carries boot text.
+    """
     try:
         listen(transport, listen_s, log, until_boot_marker=True)
-        if not log.boot_markers:
+        if expect_boot_text and not log.boot_markers:
             print(
                 "no boot-mission marker seen: the board booted earlier, debug text is off, "
                 "or it is still booting; the next byte may abort /boot.mission",
@@ -211,22 +226,38 @@ def run_probe(
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--port", required=True, help="serial device of the board's UART0")
-    parser.add_argument("--listen-s", type=bounded(float, 0.0, 60.0), default=25.0, help="passive listen first")
+    link = parser.add_mutually_exclusive_group(required=True)
+    link.add_argument("--port", help="serial device of the board's UART0")
+    link.add_argument("--http", metavar="HOST", help="board address on Wi-Fi (firmware HTTP endpoint)")
+    parser.add_argument("--listen-s", type=bounded(float, 0.0, 60.0), default=25.0, help="passive listen first (serial only)")
     parser.add_argument("--samples", type=bounded(int, 1, 100), default=10, help="number of T:130 requests")
     parser.add_argument("--interval-s", type=bounded(float, 0.05, 2.0), default=0.2, help="request spacing")
     args = parser.parse_args()
 
     log = ProbeLog(start_s=time.monotonic())
-    with SerialTransport.open(args.port) as transport:
-        run_probe(transport, listen_s=args.listen_s, samples=args.samples, interval_s=args.interval_s, log=log)
-    summary = log.summary() | {
-        "raw_bytes": transport.bytes_received,
-        "raw_non_printable_bytes": transport.non_printable_bytes,
-        "overflowed_lines": transport.overflowed_lines,
-        "unterminated_bytes": transport.pending_bytes,
-    }
-    print(json.dumps(summary, indent=2))
+    link_summary: dict[str, object]
+    if args.http is not None:
+        with HttpTransport(args.http) as http:
+            run_probe(http, listen_s=0.0, samples=args.samples, interval_s=args.interval_s, log=log, expect_boot_text=False)
+        link_summary = {
+            "link": "http",
+            "requests": http.requests,
+            "failed_requests": http.failed_requests,
+            "overflowed_replies": http.overflowed_replies,
+            "last_round_trip_s": http.last_round_trip_s,
+            "max_round_trip_s": http.max_round_trip_s,
+        }
+    else:
+        with SerialTransport.open(args.port) as serial_link:
+            run_probe(serial_link, listen_s=args.listen_s, samples=args.samples, interval_s=args.interval_s, log=log)
+        link_summary = {
+            "link": "serial",
+            "raw_bytes": serial_link.bytes_received,
+            "raw_non_printable_bytes": serial_link.non_printable_bytes,
+            "overflowed_lines": serial_link.overflowed_lines,
+            "unterminated_bytes": serial_link.pending_bytes,
+        }
+    print(json.dumps(log.summary() | link_summary, indent=2))
     return 0 if log.base_valid else 2
 
 

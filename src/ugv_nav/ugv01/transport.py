@@ -1,14 +1,18 @@
-"""Device I/O: the line-transport interface and a pyserial implementation.
+"""Device I/O: the line-transport interface, a pyserial and an HTTP implementation.
 
-``SerialTransport.open`` is a hardware action and belongs in a scoped
-commissioning task. Importing this module opens nothing.
+``SerialTransport.open`` and ``HttpTransport.write_line`` touch hardware.
+Importing this module opens nothing.
 """
 
 from __future__ import annotations
 
+import http.client
 import os
 import time
+import urllib.parse
+import urllib.request
 from collections import deque
+from collections.abc import Callable
 from types import TracebackType
 from typing import Final, Protocol, Self
 
@@ -147,6 +151,118 @@ class SerialTransport:
     def close(self) -> None:
         """Close the port."""
         self._serial.close()
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        self.close()
+
+
+DEFAULT_HTTP_TIMEOUT_S: Final = 0.3
+"""Longest wait for one HTTP reply; measured round trips on the home network were ~20-50 ms."""
+
+HttpGet = Callable[[str, float], bytes]
+"""Performs one GET of a URL with a timeout and returns at most ``MAX_LINE_BYTES + 1`` body bytes."""
+
+_NO_PROXY_OPENER = urllib.request.build_opener(urllib.request.ProxyHandler({}))
+
+
+def _urllib_get(url: str, timeout_s: float) -> bytes:
+    """GET ``url`` directly (never through an HTTP proxy from the environment)."""
+    with _NO_PROXY_OPENER.open(url, timeout=timeout_s) as response:
+        body: bytes = response.read(MAX_LINE_BYTES + 1)
+        return body
+
+
+class HttpTransport:
+    """The firmware's Wi-Fi endpoint, ``GET http://<host>/js?json=<command>``.
+
+    This is request/response, not a byte stream: each ``write_line`` performs
+    one GET and queues the reply body (the board's answer to that command, if
+    any) as one line for ``read_line``. Nothing arrives unsolicited, the board
+    does not echo commands on this path, and its debug text goes only to the
+    serial port.
+
+    A failed request (timeout, refused connection, HTTP error) raises OSError
+    from ``write_line``, which the client treats as link loss. While Wi-Fi is
+    down the host cannot deliver STOP; the firmware's 3 s heartbeat is then the
+    only backstop, so the measured stop distance after a Wi-Fi drop matters.
+    """
+
+    source_mode: Final = "hardware"
+
+    def __init__(self, host: str, *, timeout_s: float = DEFAULT_HTTP_TIMEOUT_S, get: HttpGet = _urllib_get) -> None:
+        """``host`` is an address or name with an optional ``:port``, without scheme or path."""
+        if not host or any(char in host for char in "/?#@ \t\r\n"):
+            raise ValueError(f"host must be a bare address or name, got {host!r}")
+        if not 0.0 < timeout_s <= 2.0:
+            raise ValueError(f"timeout_s must be in (0, 2], got {timeout_s}")
+        self._endpoint = f"http://{host}/js"
+        self._timeout_s = timeout_s
+        self._get = get
+        self._pending: deque[bytes] = deque()
+        self._closed = False
+        self.requests = 0
+        """GET requests attempted."""
+        self.failed_requests = 0
+        """Requests that raised (timeout, connection or HTTP error)."""
+        self.overflowed_replies = 0
+        """Replies dropped for exceeding ``MAX_LINE_BYTES``."""
+        self.last_round_trip_s: float | None = None
+        """Duration of the last successful request (monotonic clock)."""
+        self.max_round_trip_s = 0.0
+        """Longest successful request so far."""
+
+    def url_for(self, line: bytes) -> str:
+        """The request URL for one framed command line (pure; raises ValueError for bad framing)."""
+        check_frame(line)
+        command = line[:-1].decode("ascii")
+        return f"{self._endpoint}?{urllib.parse.urlencode({'json': command})}"
+
+    def write_line(self, line: bytes) -> None:
+        """Send one command as a GET and queue the board's reply; raises OSError if the request fails."""
+        self._check_open()
+        url = self.url_for(line)
+        self.requests += 1
+        start_s = time.monotonic()
+        try:
+            body = self._get(url, self._timeout_s)
+        except (OSError, http.client.HTTPException) as error:
+            self.failed_requests += 1
+            raise OSError(f"HTTP request to the board failed: {error}") from error
+        round_trip_s = time.monotonic() - start_s
+        self.last_round_trip_s = round_trip_s
+        self.max_round_trip_s = max(self.max_round_trip_s, round_trip_s)
+        if len(body) > MAX_LINE_BYTES:
+            self.overflowed_replies += 1
+            return
+        reply = body.strip()
+        if reply and reply not in (b"null", b"{}"):
+            self._pending.append(reply)
+
+    def read_line(self, timeout_s: float) -> bytes | None:
+        """Return the next queued reply, or None after ``timeout_s`` (nothing can arrive meanwhile)."""
+        self._check_open()
+        if self._pending:
+            return self._pending.popleft()
+        if timeout_s > 0:
+            time.sleep(timeout_s)
+        return None
+
+    def close(self) -> None:
+        """Mark the transport closed (HTTP holds no connection between requests)."""
+        self._closed = True
+        self._pending.clear()
+
+    def _check_open(self) -> None:
+        if self._closed:
+            raise OSError("transport is closed")
 
     def __enter__(self) -> Self:
         return self

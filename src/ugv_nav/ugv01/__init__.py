@@ -4,7 +4,8 @@ Modules, by role:
 
 - ``protocol``: pure encoding/parsing of the JSON-line protocol (no I/O).
 - ``guard``: pure motion guard (finite command lease, stop priority, re-arm).
-- ``transport``: device I/O (``Transport`` protocol and a pyserial ``SerialTransport``).
+- ``transport``: device I/O (``Transport`` protocol, pyserial ``SerialTransport``,
+  Wi-Fi ``HttpTransport``).
 - ``sim``: in-memory ``SimulatedUGV01`` transport; never touches hardware.
 - ``client``: ``UGV01Client`` that sends the guard's output over any transport.
 

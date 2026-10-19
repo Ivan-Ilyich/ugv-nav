@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 import time
+import urllib.parse
 from pathlib import Path
 from types import ModuleType
 
@@ -17,6 +19,7 @@ from ugv_nav.ugv01.protocol import (
     encode_command,
 )
 from ugv_nav.ugv01.sim import ManualClock, SimulatedUGV01
+from ugv_nav.ugv01.transport import HttpTransport
 
 PROBE_PATH = Path(__file__).resolve().parents[1] / "tools" / "ugv01_probe.py"
 STOP_LINE = encode_command(STOP)
@@ -71,3 +74,25 @@ def test_feedback_before_the_first_send_is_counted_as_unsolicited() -> None:
     summary = log.summary()
     assert summary["base_feedback_valid"] == 2
     assert summary["unsolicited_base_feedback"] == 1
+
+
+def test_probe_over_http_sends_only_stop_and_feedback_requests() -> None:
+    replies = {
+        130: b'{"T":1001,"L":0,"R":0,"r":-1.06,"p":0.39,"y":"null","v":11.82}',
+        126: b'{"T":1002,"r":0,"p":0,"y":0}',
+    }
+    sent: list[dict[str, object]] = []
+
+    def fake_get(url: str, timeout_s: float) -> bytes:
+        command = json.loads(urllib.parse.parse_qs(urllib.parse.urlsplit(url).query)["json"][0])
+        assert isinstance(command, dict) and isinstance(command["T"], int)
+        sent.append(command)
+        return replies.get(command["T"], b"null")
+
+    log = probe.ProbeLog(start_s=time.monotonic())
+    transport = HttpTransport("192.0.2.7", get=fake_get)
+    probe.run_probe(transport, listen_s=0.0, samples=3, interval_s=0.05, log=log, expect_boot_text=False)
+    assert sent[0] == sent[-1] == {"T": 1, "L": 0.0, "R": 0.0}
+    assert {command["T"] for command in sent} <= {1, 126, 130, 139}
+    assert all(command.get("L", 0.0) == 0.0 and command.get("R", 0.0) == 0.0 for command in sent)
+    assert log.base_valid == 3

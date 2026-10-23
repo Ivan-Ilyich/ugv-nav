@@ -1,6 +1,6 @@
 # UGV Nav — project notes for Claude
 
-Read this first. Last updated **13 October 2026**. Deeper detail lives in
+Read this first. Last updated **23 October 2026**. Deeper detail lives in
 `README.md`, `docs/plan.md`, `docs/hardware.md`, `docs/log.md` (dated history),
 `docs/reuse.md` and `AGENTS.md`.
 
@@ -116,20 +116,24 @@ reviewer, whichever way it comes out:
 | **MacBook Pro M4, 48 GB** | Main development, annotation and local ML machine. Repo lives here. | — |
 | **ThinkPad P50** | Ubuntu 22.04. Jetson flashing/support host (SDK Manager). Reachable over SSH on the home LAN. | — |
 
-## State (13 October 2026)
+## State (23 October 2026)
 
 - **Works:** Jetson untethered on Wi-Fi, key-based SSH; D435i RGB/depth/IMU
   streaming on the Jetson (librealsense 2.58.1 RSUSB build, firmware 5.17.3.10);
-  20-min camera soak OK; Jetson in its case with antennas; UGV01 adapter with
-  speed cap, command lease, stop priority and simulator — 111 tests, mypy
-  strict, ruff clean.
-- **19 Oct:** mount assembled; UGV01 first contact passed over Wi-Fi/HTTP; board on the home
-  network (~19 ms round trip); `HttpTransport` added (see `docs/log.md`).
-  Probe passed **from the Jetson** over Wi-Fi (0 of 14 requests failed, median
-  ≈ 18 ms); board roll/pitch match the accelerometer within 0.24°.
-- **Not yet done:** the UGV01 has not been driven; the Jetson and
-  power bank are not on the robot (printed mount arriving 14 Oct); no recording
-  tool, no perception, no navigation; batteries and PD cable not inspected.
+  20-min camera soak OK (30 fps, no lost frames); Jetson in its case with
+  antennas. PETG mount assembled on the UGV01 rails (19 Oct; case screws
+  loose until the hole depth is measured).
+- **UGV01 controller:** first contact passed over Wi-Fi/HTTP (the mount covers
+  the 40-pin header); board on the home network. Read-only probe from the
+  Jetson: 0 of 14 requests failed, median ≈ 18 ms; battery 11.5–11.8 V;
+  board roll/pitch match the accelerometer within 0.24°. Only stop and status
+  requests sent so far.
+- **Software:** UGV01 adapter (speed cap, command lease, stop priority,
+  re-arm, serial + HTTP transports, simulator) — 134 tests, mypy strict, ruff
+  clean at the repo root. README status current as of 23 Oct.
+- **Not yet done:** the UGV01 has not been driven; Jetson not yet run from the
+  power bank (power path unchecked); batteries and PD cable not inspected; no
+  recording tool, no perception, no navigation.
 - Full dated history: `docs/log.md`.
 
 ## Plan to 19 November: classical obstacle avoidance in the room

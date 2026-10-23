@@ -150,6 +150,5 @@ def write_stl(path: str, tris, name: str = "part") -> None:
         f.write(struct.pack("<I", len(tris)))
         for n, a, b, c in tris:
             f.write(struct.pack("<3f", *n))
-            for v in (a, b, c):
-                f.write(struct.pack("<3f", *v))
+            f.writelines(struct.pack("<3f", *v) for v in (a, b, c))
             f.write(b"\0\0")

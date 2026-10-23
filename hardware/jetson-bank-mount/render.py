@@ -2,13 +2,14 @@ import os
 import sys
 
 import matplotlib
+
 matplotlib.use("Agg")
-import matplotlib.pyplot as plt  # noqa: E402
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection  # noqa: E402
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 
 sys.path.insert(0, os.path.dirname(__file__))
-import mount  # noqa: E402
-from boxcad import Part  # noqa: E402
+import mount
+from boxcad import Part
 
 
 def ghost_box(name, x0, x1, y0, y1, z0, z1):
@@ -87,9 +88,12 @@ a.add_patch(plt.Rectangle((-40.5, -80), 81, 160, fill=False, edgecolor="tab:gree
 a.text(0, 0, "power bank\n160 x 81", ha="center", va="center", color="tab:green")
 b.add_patch(plt.Rectangle((-61, mount.CASE_Y - 47.5), 122, 95, fill=False, edgecolor="tab:green", linestyle="--"))
 b.text(0, mount.CASE_Y + 40, "Jetson case 122 x 95", ha="center", va="center", color="tab:green")
-a.add_patch(plt.Rectangle((-44.5, -67), 3, 15, color="tab:cyan")); a.text(-52, -60, "display", ha="right", va="center", fontsize=8)
-a.add_patch(plt.Rectangle((-44.5, -44), 3, 11, color="tab:red")); a.text(-52, -38, "button", ha="right", va="center", fontsize=8)
-a.add_patch(plt.Rectangle((-76, mount.LID_Y0), 152, mount.LID_Y1 - mount.LID_Y0, fill=False, edgecolor="tab:orange", linestyle=":")); a.text(60, mount.LID_Y0 + 4, "lid outline", color="tab:orange", fontsize=8)
+a.add_patch(plt.Rectangle((-44.5, -67), 3, 15, color="tab:cyan"))
+a.text(-52, -60, "display", ha="right", va="center", fontsize=8)
+a.add_patch(plt.Rectangle((-44.5, -44), 3, 11, color="tab:red"))
+a.text(-52, -38, "button", ha="right", va="center", fontsize=8)
+a.add_patch(plt.Rectangle((-76, mount.LID_Y0), 152, mount.LID_Y1 - mount.LID_Y0, fill=False, edgecolor="tab:orange", linestyle=":"))
+a.text(60, mount.LID_Y0 + 4, "lid outline", color="tab:orange", fontsize=8)
 plt.tight_layout()
 fig2.savefig(os.path.join(out, "preview-top.png"))
 print("ok")

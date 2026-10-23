@@ -7,8 +7,8 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFont
 
 sys.path.insert(0, os.path.dirname(__file__))
-import mount  # noqa: E402
-from boxcad import Part  # noqa: E402
+import mount
+from boxcad import Part
 
 
 def box(x0, x1, y0, y1, z0, z1):
@@ -89,6 +89,9 @@ b = render(rails + [(tray, BLUE, 0), (bank, GREY, 0), (display, CYAN, 0), (butto
 c = render([(tray, BLUE, 0)], azim_deg=-55, elev_deg=40, scale=3.0, title="Tray alone, from the front-right")
 d_ = render([(lid, ORANGE, 0)], azim_deg=-55, elev_deg=-35, scale=3.6, title="Lid alone, seen from BELOW: head pockets around the two case slots")
 sheet = Image.new("RGB", (2000, 1520), "white")
-sheet.paste(a, (0, 0)); sheet.paste(b, (1000, 0)); sheet.paste(c, (0, 760)); sheet.paste(d_, (1000, 760))
+sheet.paste(a, (0, 0))
+sheet.paste(b, (1000, 0))
+sheet.paste(c, (0, 760))
+sheet.paste(d_, (1000, 760))
 sheet.save(os.path.join(out, "preview-iso.png"))
 print("ok")

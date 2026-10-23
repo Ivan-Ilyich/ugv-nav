@@ -14,7 +14,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from boxcad import Part, check_manifold, write_stl  # noqa: E402
+from boxcad import Part, check_manifold, write_stl
 
 # ---------------- PARAMETERS ----------------------------------------------
 RAIL_CENTRE = 85.0      # rails at X = +/-85 (170 mm centre distance)

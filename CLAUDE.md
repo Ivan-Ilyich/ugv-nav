@@ -180,7 +180,7 @@ live; one config file per test (speed cap, obstacle distance, goal).
 2. Gyro bias: single samples at rest swing ±2–4 deg/s, so average a few seconds
    at start-up and subtract. Board `r`/`p` can be wrong for a while after a
    blocking command (`T:407`); don't trust them right after one.
-3. Tidy the 10 ruff findings (mount scripts and `tests/test_http_transport.py`).
+3. Ruff is clean at the repo root (`uv run ruff check .`) since 23 Oct; keep it that way.
 4. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
 5. `sensors/` + `recording/` (week 2 of the plan) in parallel.
 6. Reserve the board's address in the router.

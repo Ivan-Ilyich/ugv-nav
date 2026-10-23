@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import http.client
 import json
-import socket
 import time
 import urllib.parse
 
@@ -55,7 +54,7 @@ def test_empty_replies_queue_nothing(body: bytes) -> None:
 
 
 @pytest.mark.parametrize(
-    "error", [socket.timeout("timed out"), ConnectionRefusedError("refused"), http.client.BadStatusLine("x")]
+    "error", [TimeoutError("timed out"), ConnectionRefusedError("refused"), http.client.BadStatusLine("x")]
 )
 def test_request_failures_raise_oserror_and_are_counted(error: Exception) -> None:
     transport = HttpTransport("192.0.2.7", get=FakeBoard(error=error).get)

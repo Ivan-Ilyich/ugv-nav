@@ -27,7 +27,7 @@ addopts = "-ra"
 [tool.mypy]
 strict = true
 mypy_path = "src"
-files = ["src", "tests", "tools/ugv01_probe.py"]
+files = ["src", "tests", "tools/ugv01_probe.py", "tools/ugv01_drive_check.py"]
 
 [tool.ruff]
 target-version = "py312"

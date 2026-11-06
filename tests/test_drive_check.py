@@ -6,6 +6,7 @@ GETs answered by the simulator on a manual clock. Nothing here touches hardware.
 
 from __future__ import annotations
 
+import argparse
 import csv
 import importlib.util
 import io
@@ -263,6 +264,36 @@ def test_read_typed_returns_a_typed_line_and_times_out_without_one(monkeypatch: 
         typed.write("go a\n")
         typed.flush()
         assert drive.read_typed(1.0) == "go a\n"
+
+
+# --- Choosing steps --------------------------------------------------------------
+
+
+def test_a_single_step_can_be_run_alone_and_passes_on_its_own() -> None:
+    rig = Rig(("go c",))
+    assert drive.run_drive_check(rig.check, drive.selected_steps("c"))
+    assert [result.step for result in rig.check.results] == ["c"]
+    assert rig.sim.heartbeat_stops == 1
+    assert rig.sim.track_speeds_m_per_s() == STOPPED
+
+
+def test_a_chosen_step_still_needs_its_own_phrase() -> None:
+    rig = Rig(("go a",))
+    assert not drive.run_drive_check(rig.check, drive.selected_steps("c"))
+    assert rig.motion_times() == []
+
+
+def test_chosen_steps_keep_their_order_and_all_must_pass() -> None:
+    assert [step.letter for step in drive.selected_steps("ca")] == ["a", "c"]
+    rig = Rig(("go a", "no"))
+    assert not drive.run_drive_check(rig.check, drive.selected_steps("ca"))
+    assert [result.step for result in rig.check.results] == ["a"]
+
+
+@pytest.mark.parametrize("text", ["", "d", "ad", "C"])
+def test_unknown_steps_are_refused(text: str) -> None:
+    with pytest.raises(argparse.ArgumentTypeError):
+        drive.selected_steps(text)
 
 
 # --- Ctrl+C ----------------------------------------------------------------------

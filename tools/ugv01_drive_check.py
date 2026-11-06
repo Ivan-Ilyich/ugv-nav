@@ -41,8 +41,11 @@ power switch is all that is left.
     cd ~/ugv-nav
     PYTHONPATH=src .venv/bin/python tools/ugv01_drive_check.py --http <board address>
 
-Exit status: 0 if all three steps ran clean and the final stop was confirmed by
-fresh feedback, 2 otherwise.
+``--steps c`` runs only the named steps, for instance to retry one after a failed
+request aborted it. Each still needs its typed confirmation.
+
+Exit status: 0 if every selected step ran clean and the final stop was confirmed
+by fresh feedback, 2 otherwise.
 """
 
 from __future__ import annotations
@@ -500,15 +503,15 @@ def describe(result: StepResult) -> str:
     return text
 
 
-def run_drive_check(check: DriveCheck) -> bool:
-    """Run the steps in order until one is declined or has a problem. Every way out stops the robot.
+def run_drive_check(check: DriveCheck, steps: Sequence[Step] = STEPS) -> bool:
+    """Run ``steps`` in order until one is declined or has a problem. Every way out stops the robot.
 
-    Returns True only if all steps ran clean and the final stop was confirmed.
+    Returns True only if all of them ran clean and the final stop was confirmed.
     """
-    ending = "all steps done"
+    ending = "all selected steps done"
     stopped = False
     try:
-        for step in STEPS:
+        for step in steps:
             if not check.confirmed(step):
                 ending = "not confirmed, so nothing more moves"
                 break
@@ -534,7 +537,14 @@ def run_drive_check(check: DriveCheck) -> bool:
             "should act within about 3 s of the last T:1; if the tracks keep moving, use the power switch.",
             file=sys.stderr,
         )
-    return stopped and len(check.results) == len(STEPS) and all(r.problem is None for r in check.results)
+    return stopped and len(check.results) == len(steps) and all(r.problem is None for r in check.results)
+
+
+def selected_steps(text: str) -> tuple[Step, ...]:
+    """argparse type: the steps named by ``text``, always in a, b, c order."""
+    if not text or not set(text) <= {step.letter for step in STEPS}:
+        raise argparse.ArgumentTypeError("use one or more of the letters a, b, c")
+    return tuple(step for step in STEPS if step.letter in text)
 
 
 def read_typed(timeout_s: float) -> str | None:
@@ -556,6 +566,7 @@ def _raise_interrupt(signum: int, frame: FrameType | None) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--http", metavar="HOST", required=True, help="board address on Wi-Fi")
+    parser.add_argument("--steps", type=selected_steps, default=STEPS, help="steps to run, such as c (default abc)")
     parser.add_argument("--out-dir", type=Path, default=RECORDINGS_DIR, help="where the CSV goes")
     args = parser.parse_args()
     if not sys.stdin.isatty():
@@ -570,7 +581,7 @@ def main() -> int:
         recorder = RecordingTransport(HttpTransport(args.http), csv_file, time.monotonic)
         client = UGV01Client(recorder, CLIENT_CONFIG)
         try:
-            passed = run_drive_check(DriveCheck(client, recorder, read_typed=read_typed))
+            passed = run_drive_check(DriveCheck(client, recorder, read_typed=read_typed), args.steps)
         finally:
             client.close()
     print(f"CSV: {path}")

@@ -109,14 +109,9 @@ Detailed measurements live in `docs/hardware.md`.
   the −20°/−26° seen right after `T:407` was transient. Gyro z at rest varies
   −1.8 to +4.0 between single samples, so the "offset ≈ 4.0" was noise.
   Details in `docs/hardware.md`.
-- **6 Nov:** `tools/ugv01_drive_check.py` written for the first guarded drive:
-  0.05 m/s for 1.0 s through the client, three times, ending in a host stop,
-  lease expiry and the firmware heartbeat; typed confirmation per step, T:130 at
-  ~10 Hz to a CSV, Ctrl+C/SIGTERM/SIGHUP all stop. Step c polls outside the client
-  (`tick()` would write STOP at lease expiry) and is bounded: the host sends STOP
-  5 s after the last T:1. **Not run on the robot.** Checked by 47 new tests (181
-  in all) and by running the real process in a terminal against a fake board on
-  localhost with deceleration, quantised readings and latency: Ctrl+C, SIGTERM
-  and SIGHUP all got STOP to it within ~20 ms of the signal, and in 14 randomised
-  Ctrl+C runs no motion arrived after a STOP. That fake board is our own model,
-  so none of this says anything about the real stop times.
+- **6 Nov:** `tools/ugv01_drive_check.py` written for the first guarded drive, with
+  47 new tests, and checked against a fake board on localhost.
+- **6 Nov, first guarded drive (tracks lifted, 0.05 m/s):** host stop and lease stop
+  0.26 s, firmware heartbeat 3.26 s after the last `T:1`; `T:130` polling did not
+  refresh it. 0.78 % of HTTP requests failed, and one aborted the first step c try
+  safely. Not yet on the floor. Details in `docs/hardware.md`.

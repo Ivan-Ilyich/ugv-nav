@@ -525,3 +525,47 @@ Round trips 21–170 ms (first request slowest).
 4.00, −0.44, 1.69, −1.81, 0.50, −0.56, −1.12 (gx, gy similar, up to −2.3).
 Estimate any offset as a mean over a few seconds at start-up, not from one
 sample.
+
+## First guarded drive (6 November 2026)
+
+First motor movement. Tracks lifted, robot on a stand on the floor, owner at the
+power switch, cells inspected first (no dents or damage). Both tracks forward at
+0.05 m/s for 1.0 s, run from the Jetson over Wi-Fi. Battery 12.14 V before,
+12.13 V after. Git `aceaf9f`, then `50a4ffd` for the step c retry:
+
+    PYTHONPATH=src .venv/bin/python tools/ugv01_drive_check.py --http <board address>
+    PYTHONPATH=src .venv/bin/python tools/ugv01_drive_check.py --http <board address> --steps c
+
+Data, not in git: `recordings/ugv01_drive_check_20261106T172941Z.csv` and
+`recordings/ugv01_drive_check_20261106T175055Z.csv`.
+
+| Step | What stopped the tracks | Timer starts at | First reading below 0.005 m/s | Tool printed |
+| --- | --- | --- | --- | --- |
+| a | host stop | first STOP written | **0.26 s** | 1.33 s |
+| b | command lease, 0.55 s after the last accepted command | client's STOP | **0.26 s** | 0.26 s |
+| c | firmware heartbeat | last `T:1` written | **3.26 s** | 3.26 s |
+
+One trial each. The tool waits for the last run of still readings. In step a, R
+read above zero twice more, at +0.31 s and +1.29 s, and the second one gave
+1.33 s. The owner saw no twitch, so that is not a real stop time.
+
+The first try of step c aborted: a request timed out 0.2 s into the drive and
+the guard disarmed. The host's STOP reached the board about 0.5 s after the last
+good `T:1`, and the tracks read 0 another 0.27 s later.
+
+Findings:
+
+- The heartbeat works. During the silence the host sent 47 `T:130` and no `T:1`,
+  and the tracks stopped by themselves. So `T:130` does not refresh it.
+- Speed control looks right: readings average about 0.05 m/s, and the owner saw
+  both tracks run forward.
+- Feedback moves in steps of about 0.025 m/s when no `T:1` is being sent.
+- 68 of 8,760 HTTP requests failed (0.78 %), in irregular bursts. Feedback gaps
+  reached 0.72 s, and 15 were over the client's 0.5 s link timeout. Any failed
+  request during a drive stops it. Guess: the board's 2.4 GHz link is the weak
+  point.
+- Board pitch reads about +10°, but the owner says the robot is not tilted.
+  Cause unknown.
+
+Still unknown: the floor, stop distance, the 0.10 m/s cap, left/right mapping
+(no turn sent yet), a real Wi-Fi loss, repeatability.

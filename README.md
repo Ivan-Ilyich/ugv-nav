@@ -10,8 +10,8 @@ experiments reproducible, and claims tied to recorded evidence.
 
 ## Status (6 November 2026)
 
-The robot hardware is assembled and the controller answers over Wi-Fi; the
-robot has not driven yet.
+The robot hardware is assembled and the controller answers over Wi-Fi. The first
+guarded drive passed with the tracks lifted; it has not driven on the floor yet.
 
 - **Hardware:** a two-part mount, printed in PETG, is assembled on the UGV01's
   rails to carry the power bank and the Jetson in its case
@@ -23,18 +23,23 @@ robot has not driven yet.
   the controller's roll/pitch agree with its raw accelerometer within 0.24°
   with the robot level. The probe run from the Jetson got 14 of 14 replies,
   median round trip ≈ 18 ms. Only stop and status requests were sent.
+- **First guarded drive, tracks lifted (6 November):** at 0.05 m/s the tracks
+  stopped 0.26 s after a host stop and 0.26 s after a command-lease stop, and
+  3.26 s after the last command when only the controller's own 3 s timeout could
+  stop them. One trial each. 0.78 % of Wi-Fi requests failed; one aborted a step
+  safely.
 - **Camera:** the D435i streams RGB, depth and IMU on the Jetson with
   librealsense 2.58.1 built from source (RSUSB backend), firmware 5.17.3.10. A
   20-minute soak held 30 fps with no lost frames at ~50 °C and ~5 W.
 - **Software:** a typed UGV01 controller adapter (`src/ugv_nav/ugv01/`) with a
   speed cap, 0.5 s command lease, stop priority and explicit re-arm, serial
-  and HTTP transports, and a simulator; 181 tests, `mypy --strict` and `ruff`
-  clean at the repository root. Motion control is tested in simulation only.
-- **Not yet:** no drive yet; the Jetson's power path from the power bank and the
-  battery cells are not checked; no recording, perception or navigation code.
-- **Next:** the first guarded drive, tracks lifted, then on the floor, measuring
-  stop time and distance for a host stop, command-lease expiry, the
-  controller's 3 s timeout and Wi-Fi loss.
+  and HTTP transports, and a simulator; 188 tests, `mypy --strict` and `ruff`
+  clean at the repository root. Motion control is tested in simulation and in
+  the lifted drive above.
+- **Not yet:** no floor drive or turn yet; the Jetson's power path from the power
+  bank is not checked; no teleop, recording, perception or navigation code.
+- **Next:** the same stops on the floor, measuring stop time and distance, then
+  at the 0.10 m/s cap; then the Wi-Fi request failures and a Wi-Fi loss test.
 - **Target for November:** classical obstacle avoidance on a short route in a
   room, with repeated trials and recorded results. The ML comparison follows.
 
@@ -82,14 +87,15 @@ pinned `uv.lock`. On the Mac: `uv run pytest -q`, `uv run mypy` and
 - `src/ugv_nav/ugv01/`: UGV01 controller adapter (bounded wheel-speed commands,
   command lease and stop handling, feedback parsing, serial and HTTP
   transports) with a simulator; [protocol notes](docs/ugv01-protocol.md).
-  The HTTP transport has carried read-only requests to the real controller;
-  motion control is tested only in simulation so far.
+  The HTTP transport has driven the real controller with the tracks lifted;
+  everything else about motion control is tested in simulation only.
 - `tools/ugv01_probe.py`: read-only first-contact check; it sends only stop
   and feedback requests and prints redacted replies. Run over Wi-Fi
   (`--http`) on 19 October; the serial route (`--port`) is unverified.
 - `tools/ugv01_drive_check.py`: the first guarded drive, three timed stops
   (host stop, command lease, firmware heartbeat) with typed confirmations and
-  a CSV log. Tested in simulation; **not yet run on the robot**.
+  a CSV log. Run with the tracks lifted on 6 November; results in
+  [docs/hardware.md](docs/hardware.md#first-guarded-drive-6-november-2026).
 - `tools/realsense_check.py` and `tools/jetson_soak.py`: camera stream check and
   20-minute soak, run on the Jetson in its own venv (setup and results in
   [docs/hardware.md](docs/hardware.md#streaming-setup-follows-enumeration)).

@@ -115,8 +115,8 @@ reviewer, whichever way it comes out:
 
 | Item | Key facts | Tested by us? |
 | --- | --- | --- |
-| **Waveshare UGV01** | ESP32 "General Driver for Robots" board; one JSON object per line over UART at 115200 (40-pin header to the Jetson, or the board's USB-C, which Waveshare says needs disassembly). Encoder motors, onboard IMU, 3×18650 with UPS/protection board. Firmware probably `waveshareteam/ugv_base_general` 0.9x (GPL-3.0), but an older incompatible `UGV01_BASE` firmware exists — check the OLED version line at power-on. From source, unmeasured: 3 s motion timeout refreshed only by motion commands from **any** source (serial, Wi-Fi web UI, ESP-NOW); no latched emergency stop; the board runs a Wi-Fi access point with a published default password (anyone nearby can drive it); the same speed value is m/s in closed loop (UGV01 model setting) but raw motor power in open loop. Details: `docs/ugv01-protocol.md` | No |
-| **Batteries** | 3× Molicel P28A flat-top *unprotected* cells — this is the type Waveshare asks for (the UGV's board provides protection). Condition unchecked. | No |
+| **Waveshare UGV01** | ESP32 "General Driver for Robots" board; one JSON object per line over UART at 115200 (40-pin header to the Jetson, or the board's USB-C, which Waveshare says needs disassembly). Encoder motors, onboard IMU, 3×18650 with UPS/protection board. Firmware probably `waveshareteam/ugv_base_general` 0.9x (GPL-3.0), but an older incompatible `UGV01_BASE` firmware exists — check the OLED version line at power-on. 3 s motion timeout measured 6 Nov (tracks lifted: stopped 3.26 s after the last `T:1`, and `T:130` polling did not refresh it). From source, unmeasured: refreshed only by motion commands from **any** source (serial, Wi-Fi web UI, ESP-NOW); no latched emergency stop; the board runs a Wi-Fi access point with a published default password (anyone nearby can drive it); the same speed value is m/s in closed loop (UGV01 model setting) but raw motor power in open loop. Details: `docs/ugv01-protocol.md` | Lifted drive at 0.05 m/s (6 Nov) |
+| **Batteries** | 3× Molicel P28A flat-top *unprotected* cells — this is the type Waveshare asks for (the UGV's board provides protection). Owner inspected them 6 Nov: no dents or damage. 12.1 V. | Lifted drive (6 Nov) |
 | **Jetson Orin Nano Super 8 GB** | JetPack 7.2.1 / L4T R39.2.1, Ubuntu 24.04 aarch64, CUDA 13.2, boots from Kingston NV3 1 TB NVMe. DisplayPort gave no picture → run headless. Dev kit includes a Wi-Fi card. | Bench (4 Sep); SSH, Wi-Fi, baseline (1 Oct) |
 | **RealSense D435i** | USB ID `8086:0b3a`; must enumerate at `5000M` (USB 3). We have **one** suitable USB cable — the camera's own, which was also the Jetson USB-SSH cable. | Stationary, indoor (1 Oct) |
 | **Jetson mobile power** | UGREEN PB205 power bank + PD-to-barrel cable (recorded as Adafruit 5451, which requests a fixed 15 V and falls back to 9 V or lower; the 20 V version is 5452 — confirm from the cable's label). Check: the voltage actually negotiated under load (~25 W peak + ~2 W camera), power bank idle shut-off, plug fit (Jetson jack 5.5×2.5 mm). | No |
@@ -133,16 +133,20 @@ reviewer, whichever way it comes out:
 - **UGV01 controller:** first contact passed over Wi-Fi/HTTP (the mount covers
   the 40-pin header); board on the home network. Read-only probe from the
   Jetson: 0 of 14 requests failed, median ≈ 18 ms; battery 11.5–11.8 V;
-  board roll/pitch match the accelerometer within 0.24°. Only stop and status
-  requests sent so far.
+  board roll/pitch matched the accelerometer within 0.24° then. Pitch now reads
+  about +10° with the robot not tilted (cause unknown).
+- **First guarded drive passed, tracks lifted, 0.05 m/s (6 Nov):** host stop and
+  lease stop 0.26 s, firmware heartbeat 3.26 s after the last `T:1`, both tracks
+  forward. One trial each. 0.78 % of HTTP requests fail in irregular bursts, and
+  any failure during a drive disarms; one aborted a step c try safely.
 - **Software:** UGV01 adapter (speed cap, command lease, stop priority,
   re-arm, serial + HTTP transports, simulator) and the drive check
-  (`tools/ugv01_drive_check.py`, written 6 Nov, **not yet run on the robot**) —
-  181 tests, mypy strict, ruff clean at the repo root. README status current
-  as of 6 Nov.
-- **Not yet done:** the UGV01 has not been driven; Jetson not yet run from the
-  power bank (power path unchecked); batteries and PD cable not inspected; no
-  recording tool, no perception, no navigation.
+  (`tools/ugv01_drive_check.py`, `--steps` retries one step) — 188 tests, mypy
+  strict, ruff clean at the repo root. README status current as of 6 Nov.
+- **Not yet done:** not driven on the floor; no turn commanded, so left/right
+  mapping is unknown; Jetson not yet run from the power bank (power path
+  unchecked); PD cable not inspected; no teleop, recording tool, perception or
+  navigation.
 - Full dated history: `docs/log.md`.
 
 ## Plan to 19 November: classical obstacle avoidance in the room
@@ -184,25 +188,23 @@ live; one config file per test (speed cap, obstacle distance, goal).
 
 ## Next steps
 
-1. **First guarded drive**, tracks lifted, then on the floor. Inspect the cells
-   first (still unchecked). Sync the repo to the Jetson (rsync without
-   `--delete`; venv `~/ugv-nav/.venv` has pyserial), close any browser tab on
-   the board's page, log in with `ssh jetson` (the tool needs a terminal so
-   Ctrl+C reaches it), then in `~/ugv-nav`:
-   `PYTHONPATH=src .venv/bin/python tools/ugv01_drive_check.py --http <board address>`.
-   It runs host stop, lease expiry and firmware heartbeat at 0.05 m/s and
-   writes a CSV to `recordings/`. Check that peak L/R read positive and near
-   0.05 (wrong sign or size means polarity or open-loop mode). Record results
-   in `docs/hardware.md`. **Still open afterwards:** stop distance (tape, or
-   integrate the CSV), the same stops at the 0.10 m/s cap (the plan's "done
-   when"; change `DRIVE_SPEED_M_PER_S`), and Wi-Fi loss.
-2. Gyro bias: single samples at rest swing ±2–4 deg/s, so average a few seconds
+1. **Drive check on the floor**, at least 1 m clear ahead: the lifted run passed,
+   so repeat it at 0.05 m/s and measure stop distance with a tape. Then the same
+   stops at the 0.10 m/s cap (the plan's "done when"; change
+   `DRIVE_SPEED_M_PER_S`). A failed request aborts a step safely; retry it with
+   `--steps`. The run command is in `docs/hardware.md`.
+2. **Before teleop:** find out why 0.78 % of HTTP requests fail, and decide how
+   the client should treat one failed request, since a teleop session can't
+   re-arm every few seconds. Command a turn to confirm left/right mapping. Run a
+   real Wi-Fi loss stop test.
+3. Find out why the board's pitch reads about +10° on a robot that isn't tilted.
+4. Gyro bias: single samples at rest swing ±2–4 deg/s, so average a few seconds
    at start-up and subtract. Board `r`/`p` can be wrong for a while after a
    blocking command (`T:407`); don't trust them right after one.
-3. Ruff is clean at the repo root (`uv run ruff check .`) since 23 Oct; keep it that way.
-4. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
-5. `sensors/` + `recording/` (week 2 of the plan) in parallel.
-6. Reserve the board's address in the router.
+5. Ruff is clean at the repo root (`uv run ruff check .`) since 23 Oct; keep it that way.
+6. Measure the Jetson case's bottom-hole depth, then tighten the case screws.
+7. `sensors/` + `recording/` (week 2 of the plan) in parallel.
+8. Reserve the board's address in the router.
 
 ## Roadmap after 19 November (detail in `docs/plan.md`)
 

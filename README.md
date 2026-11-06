@@ -8,7 +8,7 @@ perception or navigation.
 The project is also a learning exercise. Decisions should be understandable,
 experiments reproducible, and claims tied to recorded evidence.
 
-## Status (23 October 2026)
+## Status (6 November 2026)
 
 The robot hardware is assembled and the controller answers over Wi-Fi; the
 robot has not driven yet.
@@ -28,7 +28,7 @@ robot has not driven yet.
   20-minute soak held 30 fps with no lost frames at ~50 °C and ~5 W.
 - **Software:** a typed UGV01 controller adapter (`src/ugv_nav/ugv01/`) with a
   speed cap, 0.5 s command lease, stop priority and explicit re-arm, serial
-  and HTTP transports, and a simulator; 134 tests, `mypy --strict` and `ruff`
+  and HTTP transports, and a simulator; 181 tests, `mypy --strict` and `ruff`
   clean at the repository root. Motion control is tested in simulation only.
 - **Not yet:** no drive yet; the Jetson's power path from the power bank and the
   battery cells are not checked; no recording, perception or navigation code.
@@ -87,6 +87,9 @@ pinned `uv.lock`. On the Mac: `uv run pytest -q`, `uv run mypy` and
 - `tools/ugv01_probe.py`: read-only first-contact check; it sends only stop
   and feedback requests and prints redacted replies. Run over Wi-Fi
   (`--http`) on 19 October; the serial route (`--port`) is unverified.
+- `tools/ugv01_drive_check.py`: the first guarded drive, three timed stops
+  (host stop, command lease, firmware heartbeat) with typed confirmations and
+  a CSV log. Tested in simulation; **not yet run on the robot**.
 - `tools/realsense_check.py` and `tools/jetson_soak.py`: camera stream check and
   20-minute soak, run on the Jetson in its own venv (setup and results in
   [docs/hardware.md](docs/hardware.md#streaming-setup-follows-enumeration)).

@@ -1,6 +1,6 @@
 # UGV Nav — project notes for Claude
 
-Read this first. Last updated **23 October 2026**. Deeper detail lives in
+Read this first. Last updated **6 November 2026**. Deeper detail lives in
 `README.md`, `docs/plan.md`, `docs/hardware.md`, `docs/log.md` (dated history),
 `docs/reuse.md` and `AGENTS.md`.
 
@@ -116,7 +116,7 @@ reviewer, whichever way it comes out:
 | **MacBook Pro M4, 48 GB** | Main development, annotation and local ML machine. Repo lives here. | — |
 | **ThinkPad P50** | Ubuntu 22.04. Jetson flashing/support host (SDK Manager). Reachable over SSH on the home LAN. | — |
 
-## State (23 October 2026)
+## State (6 November 2026)
 
 - **Works:** Jetson untethered on Wi-Fi, key-based SSH; D435i RGB/depth/IMU
   streaming on the Jetson (librealsense 2.58.1 RSUSB build, firmware 5.17.3.10);
@@ -129,8 +129,10 @@ reviewer, whichever way it comes out:
   board roll/pitch match the accelerometer within 0.24°. Only stop and status
   requests sent so far.
 - **Software:** UGV01 adapter (speed cap, command lease, stop priority,
-  re-arm, serial + HTTP transports, simulator) — 134 tests, mypy strict, ruff
-  clean at the repo root. README status current as of 23 Oct.
+  re-arm, serial + HTTP transports, simulator) and the drive check
+  (`tools/ugv01_drive_check.py`, written 6 Nov, **not yet run on the robot**) —
+  181 tests, mypy strict, ruff clean at the repo root. README status current
+  as of 6 Nov.
 - **Not yet done:** the UGV01 has not been driven; Jetson not yet run from the
   power bank (power path unchecked); batteries and PD cable not inspected; no
   recording tool, no perception, no navigation.
@@ -175,12 +177,18 @@ live; one config file per test (speed cap, obstacle distance, goal).
 
 ## Next steps
 
-1. **First guarded drive**, tracks lifted, then on the floor: a small
-   `tools/ugv01_drive_check.py` through `UGV01Client` + `HttpTransport` (0.10 m/s cap,
-   0.5 s lease), run from the Jetson (repo synced there by rsync without
-   `--delete`; venv `~/ugv-nav/.venv` has pyserial). Measure stop time and
-   distance for host stop, lease expiry, 3 s firmware heartbeat after the host
-   goes silent, and Wi-Fi loss.
+1. **First guarded drive**, tracks lifted, then on the floor. Inspect the cells
+   first (still unchecked). Sync the repo to the Jetson (rsync without
+   `--delete`; venv `~/ugv-nav/.venv` has pyserial), close any browser tab on
+   the board's page, log in with `ssh jetson` (the tool needs a terminal so
+   Ctrl+C reaches it), then in `~/ugv-nav`:
+   `PYTHONPATH=src .venv/bin/python tools/ugv01_drive_check.py --http <board address>`.
+   It runs host stop, lease expiry and firmware heartbeat at 0.05 m/s and
+   writes a CSV to `recordings/`. Check that peak L/R read positive and near
+   0.05 (wrong sign or size means polarity or open-loop mode). Record results
+   in `docs/hardware.md`. **Still open afterwards:** stop distance (tape, or
+   integrate the CSV), the same stops at the 0.10 m/s cap (the plan's "done
+   when"; change `DRIVE_SPEED_M_PER_S`), and Wi-Fi loss.
 2. Gyro bias: single samples at rest swing ±2–4 deg/s, so average a few seconds
    at start-up and subtract. Board `r`/`p` can be wrong for a while after a
    blocking command (`T:407`); don't trust them right after one.

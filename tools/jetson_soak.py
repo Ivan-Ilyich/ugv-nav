@@ -1,14 +1,11 @@
 #!/usr/bin/env python3
 """Sustained-load soak test for the Jetson + D435i.
 
-Streams depth, colour and (when exposed) IMU for a fixed time while aligning
-every depth frame to colour on the CPU, and logs one JSON line every interval:
-per-stream frames, frame-number gaps, longest interval, frames the processing
-thread could not keep up with, processing time, temperatures and clock speeds.
-`tegrastats` runs alongside for power, CPU/GPU load and RAM. A final JSON
-summary is printed at the end.
+Streams depth, colour and (when exposed) IMU for a fixed time while aligning every
+depth frame to colour on the CPU. Logs one JSON line per interval and prints a final
+JSON summary; `tegrastats` runs alongside for power, CPU/GPU load and RAM.
 
-Run on the Jetson inside the venv that has pyrealsense2 (no recording):
+Run on the Jetson in the venv that has pyrealsense2 (no recording):
 
     ~/ugv-nav/.venv/bin/python tools/jetson_soak.py --minutes 20 \
         --out ~/ugv-data/soak/<session>

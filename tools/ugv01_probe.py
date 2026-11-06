@@ -1,43 +1,31 @@
 #!/usr/bin/env python3
 """READ-ONLY first-contact probe for the UGV01 driver board over serial or Wi-Fi.
 
-Sends no motion command. The only bytes it writes are STOP
-(``{"T":1,"L":0.0,"R":0.0}``) and one-shot feedback requests (T:139 speed
-rate, T:126 IMU, T:130 chassis feedback). It changes no board setting: echo,
-debug text, feedback stream, heartbeat, main type and Wi-Fi stay as they are.
-
-Opening the board's USB-C port may reboot it: the CP2102's DTR/RTS lines
-drive the ESP32 reset and boot pins. The transport clears RTS then DTR after
-opening (Waveshare's order); whether opening still resets the board must be
-measured (a ROM boot banner during the passive listen means it did). The
-40-pin UART has no DTR/RTS path.
+Sends no motion command: only STOP (``{"T":1,"L":0.0,"R":0.0}``) and one-shot
+feedback requests (T:139 speed rate, T:126 IMU, T:130 chassis feedback). It
+changes no board setting.
 
 Sequence:
-1. Open the port (115200 8N1) and only listen for ``--listen-s`` seconds
-   (default 25), stopping early at a boot-mission marker. Any byte received
-   from serial start-up until the boot mission ends (several seconds; longer
-   in Wi-Fi STA mode) aborts that mission. Without a marker the probe warns.
+1. Serial only: listen for ``--listen-s`` seconds (default 25), stopping early at
+   a boot-mission marker. Any byte received before the boot mission ends aborts
+   it. Without a marker the probe warns.
 2. Send STOP once, then T:139 and T:126 once, then T:130 ``--samples`` times.
-3. Send STOP again and close the port.
+3. Send STOP again and close.
 
-Every received line is printed with seconds since opening, after masking
-Wi-Fi passwords/SSIDs, MAC and IP addresses (the firmware prints them). A JSON
-summary follows. Signatures it helps check: echoed host lines and T:1001
-replies mean the ugv_base_general family; ``raw_non_printable_bytes`` close to
-``raw_bytes`` with few or no complete lines suggests a baud mismatch (the older
-UGV01_BASE firmware runs at 1,000,000); a 'temp' key in T:1001 suggests a build
-newer than 0.90. ``unsolicited_base_feedback`` counts valid T:1001 that arrived
-before the probe sent anything: if it is not zero, the T:131 stream or another
-host is active, and polled feedback is no proof that the host's bytes arrive.
+Every received line is printed with seconds since opening, with Wi-Fi passwords,
+SSIDs, MAC and IP addresses masked. A JSON summary follows. What to look for:
+echoed lines and T:1001 replies mean the ugv_base_general family;
+``raw_non_printable_bytes`` close to ``raw_bytes`` suggests a baud mismatch
+(UGV01_BASE runs at 1,000,000); a 'temp' key suggests a build newer than 0.90; a
+non-zero ``unsolicited_base_feedback`` means the T:131 stream or another host is
+active, so polled feedback does not prove the host's bytes arrive.
 
-Over Wi-Fi (``--http``) the same commands go to the firmware's HTTP endpoint
-``GET http://<host>/js?json=<command>``. There is no boot text, echo or
-unsolicited output on that path, so the passive listen is skipped, and the
-summary adds request counts and round-trip times instead of raw serial counts.
+Opening USB-C may reboot the board (see ``SerialTransport.open``). Over Wi-Fi
+(``--http``) there is no boot text or echo, so the listen is skipped and the
+summary shows request counts and round-trip times.
 
-This is a hardware action: run it with the tracks off the ground. Wi-Fi
-first contact (Mac, curl, 19 October 2026) succeeded; the serial route is
-unverified (the printed mount covers the Jetson's 40-pin header):
+This is a hardware action: run it with the tracks off the ground. The serial
+route is unverified:
 
     uv run python tools/ugv01_probe.py --http <board address>
     uv run python tools/ugv01_probe.py --port <serial device>

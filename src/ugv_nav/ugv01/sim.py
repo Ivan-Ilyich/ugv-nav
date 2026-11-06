@@ -1,24 +1,20 @@
 """SIMULATION ONLY: an in-memory stand-in for the UGV01 board. No hardware access.
 
-``SimulatedUGV01`` implements the ``Transport`` interface entirely in memory.
-It models what the adapter relies on, as read from ugv_base_general 0.9x
-source for the closed-loop UGV01 path (mainType 3), not as measured on the
-robot:
+``SimulatedUGV01`` implements the ``Transport`` interface. It models what the
+adapter relies on, taken from ugv_base_general 0.9x source for the closed-loop
+path (mainType 3):
 
 - one JSON command per ``\\n`` line; unparsable lines are dropped silently;
-- echo of every parsed line (exact bytes) before it is handled, on by default;
-- ``{"T":1}`` sets track setpoints only if L and R are both numbers; if so it
-  refreshes the heartbeat *before* the range check, and |L| or |R| > 2.0 m/s
-  is ignored (previous setpoint kept), not clamped;
-- ``{"T":130}`` answers with one CRLF-terminated T:1001 line;
-  ``{"T":143,"cmd":0/1}`` switches the echo; other ``T`` codes do nothing;
-- the heartbeat: once more than ``heartbeat_timeout_s`` has passed since the
-  last accepted-shape T:1, setpoints become zero (once, until the next T:1).
-  Feedback requests do not refresh it.
+- echo of every parsed line before it is handled, on by default;
+- ``{"T":1}`` sets speeds only if L and R are both numbers; it then refreshes
+  the heartbeat *before* the range check, and |L| or |R| > 2.0 m/s is ignored;
+- ``{"T":130}`` answers with one T:1001 line; ``{"T":143,"cmd":0/1}`` switches
+  the echo; other ``T`` codes do nothing;
+- the heartbeat: after ``heartbeat_timeout_s`` with no T:1, setpoints go to zero
+  once. Feedback requests do not refresh it.
 
-Idealised: speeds equal setpoints instantly (no PID, decel, noise or
-quantisation); no boot log, Wi-Fi, IMU or rate limiter. Time comes from an
-injected clock and nothing here sleeps.
+Idealised: speeds equal setpoints instantly; no PID, noise, quantisation, boot
+log, Wi-Fi or IMU. Time comes from an injected clock and nothing here sleeps.
 """
 
 from __future__ import annotations

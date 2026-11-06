@@ -1,37 +1,31 @@
 """UGV01Client: drives any ``Transport`` from the ``MotionGuard``'s output.
 
-Motion only passes through the guard. Time comes from the client's injected
-monotonic clock (``time.monotonic`` by default), read once at the start of
-every public call, so a lease is checked against the time of the write itself
-rather than a time the caller supplies. Each ``tick()``:
+Motion only passes through the guard. Time comes from an injected monotonic
+clock, read once at the start of every public call, so a lease is checked
+against the time of the write itself. Each ``tick()``:
 
 1. reads up to ``max_lines_per_tick`` board lines and keeps the latest valid
-   T:1001 feedback (timestamped with that tick's clock reading);
+   T:1001 feedback, stamped with that tick's clock reading;
 2. marks the link up while that feedback is at most ``link_timeout_s`` old,
    and down (stop, disarm) otherwise;
 3. writes the guard's output: a motion command at most once per
-   ``send_period_s``; a stop immediately on every transition to stop, then
-   again each period while inside the stop-resend window or while fresh
-   feedback still shows the tracks moving; nothing after that;
-4. polls feedback with ``{"T":130}`` once per ``send_period_s``. Polling (rather
-   than the T:131 stream) leaves no board setting behind. It is round-trip
-   evidence of link health only while nothing else makes the board print
-   T:1001: the T:131 stream (which ``/boot.mission`` may enable) or T:130
-   requests from the web UI or ESP-NOW would keep the link looking up while
-   the host's own bytes are not arriving. Commissioning checks this.
+   ``send_period_s``; a stop at once on every transition to stop, then each
+   period during the stop-resend window or while fresh feedback shows motion;
+   nothing after that;
+4. polls feedback with ``{"T":130}`` once per ``send_period_s``. This leaves no
+   board setting behind. It proves a round trip only while nothing else makes
+   the board print T:1001 (the T:131 stream, or T:130 from the web UI or ESP-NOW).
 
 A clock reading that is not finite or earlier than the previous one latches a
-fault: the client writes STOP, disarms and otherwise ignores that call (no
-feedback read, no schedule change). Valid readings then resume normally;
-motion needs a new ``arm()`` and command.
+fault: the client writes STOP, disarms and ignores that call. Motion then needs
+a new ``arm()`` and command.
 
-Transport errors (OSError) mark the link down instead of propagating. After
-the link returns, a stop is written at once: stops written while the link was
-silently down never reached the board, whose last setpoint runs until its
-heartbeat expires (about 3 s, unverified on this robot).
+Transport errors (OSError) mark the link down instead of propagating. When the
+link returns, a stop is written at once: stops sent during an outage never
+arrived, and the board keeps its last setpoint until its heartbeat expires
+(about 3 s).
 
-Any byte received from serial start-up until the boot mission ends (several
-seconds; longer in Wi-Fi STA mode) aborts that mission, so start the client
+Any byte received before the boot mission ends aborts it, so start the client
 only after the board has finished booting.
 """
 

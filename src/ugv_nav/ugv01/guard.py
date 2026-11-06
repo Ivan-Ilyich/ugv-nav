@@ -1,19 +1,16 @@
 """Pure motion guard: a finite command lease with stop priority and explicit re-arm.
 
 The guard decides what the robot should be commanded *now*. It holds at most
-one accepted wheel-speed command, valid only until its lease deadline
-(``accepted_at + lease_s``, on the caller's monotonic clock). It outputs
-``STOP`` whenever it is not armed, has no command, or the lease has run out.
+one accepted wheel-speed command, valid until ``accepted_at + lease_s``.
+Otherwise it outputs ``STOP``.
 
-Stopping events (lease expiry, explicit stop, fault, invalid command, link
-loss, a clock that runs backwards) all disarm the guard and discard the held
-command. Motion needs an explicit ``arm()`` followed by a *new* command, so a
-command from before a stop or reconnect can never resume.
+Every stopping event (lease expiry, stop, fault, invalid command, link loss, a
+clock that runs backwards) disarms the guard and drops the command. Motion then
+needs ``arm()`` and a *new* command, so an old command can never resume.
 
-Time is injected as ``now_s`` (seconds from any monotonic clock); the guard
-never sleeps or reads a clock itself. It only shapes host output: stopping
-after a host crash relies on the firmware heartbeat (about 3 s), which is
-unverified on this robot.
+Time is injected as ``now_s`` (monotonic seconds); the guard never sleeps or
+reads a clock. It only shapes host output: stopping after a host crash relies on
+the firmware heartbeat (about 3 s).
 """
 
 from __future__ import annotations

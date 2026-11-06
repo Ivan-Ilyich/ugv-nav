@@ -1,30 +1,24 @@
 #!/usr/bin/env python3
 """Stationary RealSense stream check for the D435i.
 
-Streams RGB, depth and (when exposed) accel and gyro for a fixed time,
-optionally records them (librealsense >= 2.58 writes ROS 2 .db3 files) and
-reads the file back per sensor. Prints a JSON summary: device/firmware, stream
-profiles, calibration, per-stream rates, frame-number gaps and counter resets,
-timestamp behaviour, invalid depth, IMU sanity, which device nodes the SDK
-opened (backend evidence), and frames recorded versus delivered.
+Streams RGB, depth and (when exposed) accel and gyro for a fixed time, optionally
+records them (librealsense >= 2.58 writes ROS 2 .db3 files) and reads the file
+back. Prints a JSON summary: device, streams, calibration, rates, gaps, timestamps,
+invalid depth, IMU sanity, opened device nodes, frames recorded versus delivered.
 
-Run on the Jetson inside the venv that has pyrealsense2, keeping recordings
-outside Git:
+Run on the Jetson in the venv that has pyrealsense2, with recordings outside Git:
 
     ~/ugv-nav/.venv/bin/python tools/realsense_check.py --seconds 10 \
         --record ~/ugv-data/recordings/<session>.db3
 
-Notes on the numbers:
-- Frames are identified by (frame number, timestamp): the D435i depth stream
-  restarts its frame counter shortly after start-up, so numbers alone repeat.
-- Samples whose global timestamp precedes the session start are counted as
-  `stale_at_start`, and samples stamped more than 1 s after their own arrival as
-  `future_stamped`; both are left out of the statistics.
-- `receive_minus_timestamp_ms` is host receive time minus the SDK's global
-  timestamp. It includes the SDK's device-to-host clock-mapping error (it can
-  be negative), so it is not a latency measurement.
+- Frames are identified by (frame number, timestamp): the depth stream restarts
+  its counter after start-up, so numbers alone repeat.
+- Samples stamped before the session (`stale_at_start`) or more than 1 s after
+  arrival (`future_stamped`) are left out of the statistics.
+- `receive_minus_timestamp_ms` includes clock-mapping error (it can be negative),
+  so it is not a latency measurement.
 
-The summary deliberately omits device serial numbers and the home directory.
+The summary omits device serial numbers and the home directory.
 """
 
 from __future__ import annotations

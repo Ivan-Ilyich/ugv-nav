@@ -1,17 +1,16 @@
-"""Pure encoding and parsing for the UGV01 JSON-line serial protocol (no I/O).
+"""Pure encoding and parsing for the UGV01 JSON-line protocol (no I/O).
 
 Protocol facts come from waveshareteam/ugv_base_general @ d308df9 (GPL-3.0),
-read as documentation only; no firmware code is copied here. None of it has
-been checked against this robot yet. See docs/ugv01-protocol.md.
+read as documentation only; no firmware code is copied here. See
+docs/ugv01-protocol.md.
 
-Wire format: the host sends one JSON object per line, terminated by ``\\n``.
-The board answers with CRLF-terminated JSON lines interleaved with an echo of
-every parsed host line, plain-text debug output, and a Wi-Fi status object
-(T:405) that has no line terminator at all. The parser below therefore
-extracts JSON objects from arbitrary text and never raises on malformed input.
+The host sends one JSON object per line, ending in ``\\n``. The board answers
+with CRLF JSON lines mixed with an echo of every host line, plain debug text,
+and a T:405 Wi-Fi status with no line ending. So the parser extracts JSON
+objects from any text and never raises.
 
-Units are carried in names: ``_m_per_s`` (metres per second), ``_deg``
-(degrees), ``_v`` (volts), ``_c`` (degrees Celsius), ``_s`` (seconds).
+Units are in names: ``_m_per_s``, ``_deg``, ``_v`` (volts), ``_c`` (Celsius),
+``_s`` (seconds).
 """
 
 from __future__ import annotations
@@ -74,9 +73,8 @@ class CommandRejected(ValueError):
 class WheelSpeedCommand:
     """Left/right track speed setpoints for ``{"T":1,"L":..,"R":..}`` (CMD_SPEED_CTRL).
 
-    Units are metres per second on the firmware's closed-loop UGV01 path
-    (mainType 3). Positive means forward according to the Waveshare wiki; the
-    sign convention and left/right mapping are unverified on this robot.
+    Metres per second on the closed-loop UGV01 path (mainType 3). Positive is
+    forward (seen on the robot on 6 November 2026); left/right mapping is unverified.
 
     Construction does not validate, so a guard can record a bad command as a
     fault; ``wheel_speed_problem`` and ``encode_command`` do the checking.
@@ -179,21 +177,18 @@ def encode_command(
 class BaseFeedback:
     """Chassis feedback ``{"T":1001,...}``.
 
-    ``left_m_per_s``/``right_m_per_s`` are the firmware's per-loop track speed
-    estimates (closed-loop UGV01 path; noisy, about 0.03 m/s quantisation;
-    sign and side mapping unverified). ``roll_deg``/``pitch_deg``/``yaw_deg`` are
-    the board AHRS in degrees, in an unverified sensor frame; yaw is
-    magnetometer-based and uncalibrated. ``battery_v`` may be up to 10 s stale.
-    ``esp32_temp_c`` is the ESP32 die temperature, not the IMU, and is absent on
-    older builds. The board sends no timestamp: ``received_monotonic_s`` is host
-    monotonic time at receipt (or at the tick that read the line).
+    ``left_m_per_s``/``right_m_per_s`` are per-loop track speed estimates: noisy,
+    in steps of about 0.025 m/s with no T:1 going out, side mapping unverified.
+    ``roll_deg``, ``pitch_deg`` and ``yaw_deg`` are the board's attitude in an
+    unverified sensor frame; yaw is magnetometer-based and uncalibrated.
+    ``battery_v`` may be up to 10 s stale. ``esp32_temp_c`` is the ESP32 die
+    temperature, absent on older builds. The board sends no timestamp:
+    ``received_monotonic_s`` is host time at receipt (or at the tick that read the line).
 
     ``valid`` is False when either speed is missing, non-numeric, non-finite or
-    implausible; ``problem`` then says why and the speed fields may be None.
-    Optional fields are None when absent or not finite (builds from b113287,
-    May 2024, still labelled 0.90, send ``"y":"null"``; earlier 0.90 builds,
-    likely the factory image, and later builds send a numeric y); that alone
-    does not make the message invalid.
+    implausible; ``problem`` says why, and the speeds may be None. Optional fields
+    are None when absent or not finite (some builds send ``"y":"null"``); that
+    alone does not make the message invalid.
     """
 
     left_m_per_s: float | None

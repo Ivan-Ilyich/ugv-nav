@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """FIRST GUARDED DRIVE of the UGV01 over Wi-Fi: three timed stops. THIS MOVES THE MOTORS.
 
-Each step drives both tracks forward at 0.05 m/s for 1.0 s through
-``UGV01Client`` (cap 0.10 m/s, 0.5 s lease), then ends the motion a different
-way. A typed confirmation comes first. The printed time starts at the "stop
-event":
+After a typed confirmation, each step drives both tracks forward at 0.05 m/s for
+1.0 s through ``UGV01Client`` (cap 0.10 m/s, 0.5 s lease), then ends the motion a
+different way. The printed time starts at the "stop event":
 
   step  how the motion ends                            stop event
   a     the tool calls ``client.stop()``               first STOP written
@@ -13,39 +12,34 @@ event":
   c     the tool stops ticking: no STOP is sent, so    last T:1 written (the expiry
         only the firmware heartbeat can stop them      cannot be seen from here)
 
-"Stopped" means the start of the final run of at least ``STILL_SAMPLES`` polls
-with |L| and |R| below 0.005 m/s, worked out after the window has ended. A single
-low reading proves nothing: feedback is quantised to about 0.03 m/s, so it can
-read zero while the tracks creep. Times are good to about one poll (0.1 s).
+"Stopped" means the start of the final run of at least ``STILL_SAMPLES`` polls with
+|L| and |R| below 0.005 m/s, worked out after the window ends. A single low reading
+proves nothing: feedback moves in steps (about 0.025 m/s with no T:1 going out), so it
+can read zero while the tracks creep. Times are good to about one poll (0.1 s).
 
-T:130 is polled at about 10 Hz from start to finish, prompts included. Rows go
-to a CSV in the repo's gitignored ``recordings/``, flushed as they happen so an
-aborted run keeps its data: every T:1 written, every T:1001 read, each with
-host monotonic time. ``commanded`` is the last T:1 that reached the board, not
-what the guard last wanted, so it stays non-zero during step c's silence.
+T:130 is polled at about 10 Hz from start to finish. Every T:1 written and T:1001
+read goes to a CSV in the gitignored ``recordings/``, flushed as it happens.
+``commanded`` is the last T:1 that reached the board, so it stays non-zero during
+step c's silence.
 
 Step c cannot use ``tick()``, which would write STOP when the lease ends, so
-``RecordingTransport.poll`` sends T:130 directly. That cannot move the robot,
-and per the firmware source it does not refresh the heartbeat. Both that and
-the heartbeat itself are unverified on this robot (the older UGV01_BASE firmware
-refreshes on any JSON), so step c is bounded: ``HEARTBEAT_WATCH_S`` after the
-last T:1 the tool sends STOP whatever happened, and if the tracks had not
-stopped by then it reports the heartbeat as failed.
+``RecordingTransport.poll`` sends T:130 directly. That cannot move the robot and
+does not refresh the heartbeat. Step c is bounded: ``HEARTBEAT_WATCH_S`` after the
+last T:1 the tool sends STOP whatever happened, and reports a heartbeat failure if
+the tracks had not stopped.
 
-Ctrl+C at any point (also SIGTERM or an SSH hang-up) writes STOP and keeps
-resending it for ``FINAL_STOP_S``. It only reaches this process from a terminal,
-so the tool refuses to start without one: log in with ``ssh jetson`` first, or
-use ``ssh -t``. While Wi-Fi is down no STOP can arrive, and the heartbeat or the
-power switch is all that is left.
+Ctrl+C (also SIGTERM or an SSH hang-up) writes STOP and keeps resending it for
+``FINAL_STOP_S``. It only reaches this process from a terminal, so the tool refuses
+to start without one: use ``ssh jetson`` or ``ssh -t``. While Wi-Fi is down no STOP
+can arrive, and only the heartbeat or the power switch can stop the tracks.
 
     cd ~/ugv-nav
     PYTHONPATH=src .venv/bin/python tools/ugv01_drive_check.py --http <board address>
 
-``--steps c`` runs only the named steps, for instance to retry one after a failed
-request aborted it. Each still needs its typed confirmation.
+``--steps c`` runs only the named steps, each with its typed confirmation.
 
-Exit status: 0 if every selected step ran clean and the final stop was confirmed
-by fresh feedback, 2 otherwise.
+Exit status: 0 if every selected step ran clean and the final stop was confirmed by
+fresh feedback, 2 otherwise.
 """
 
 from __future__ import annotations

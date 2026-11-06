@@ -84,15 +84,11 @@ class SerialTransport:
     ) -> SerialTransport:
         """Open ``port`` at ``baud_rate`` 8N1 (exclusively on POSIX), then clear RTS and DTR.
 
-        On the board's USB-C route a CP2102 drives the ESP32 reset (EN) and boot
-        (IO0) pins from DTR/RTS. The lines cannot be kept deasserted across the
-        open: the OS typically asserts both when the port opens (Linux does), and
-        pyserial applies values set beforehand only afterwards, DTR first. So
-        pyserial's defaults (both asserted) are kept and the lines are cleared
-        after opening, RTS then DTR, as in Waveshare's demo. Opening the USB-C
-        port may still reset (reboot) the board; that must be measured in
-        commissioning (a ROM boot banner during the probe's passive listen means
-        it did). The 40-pin UART route has no DTR/RTS path.
+        On the USB-C route a CP2102 drives the ESP32 reset (EN) and boot (IO0)
+        pins from DTR/RTS. The OS asserts both on open, so they are cleared
+        afterwards, RTS then DTR, as in Waveshare's demo. Opening USB-C may still
+        reboot the board: a ROM boot banner during the probe's listen means it
+        did. The 40-pin UART has no DTR/RTS path.
         """
         link = serial.Serial()
         link.port = port
@@ -183,16 +179,13 @@ def _urllib_get(url: str, timeout_s: float) -> bytes:
 class HttpTransport:
     """The firmware's Wi-Fi endpoint, ``GET http://<host>/js?json=<command>``.
 
-    This is request/response, not a byte stream: each ``write_line`` performs
-    one GET and queues the reply body (the board's answer to that command, if
-    any) as one line for ``read_line``. Nothing arrives unsolicited, the board
-    does not echo commands on this path, and its debug text goes only to the
-    serial port.
+    Request/response, not a byte stream: each ``write_line`` does one GET and
+    queues the reply body as one line for ``read_line``. Nothing arrives
+    unsolicited, and there is no echo or debug text on this path.
 
-    A failed request (timeout, refused connection, HTTP error) raises OSError
-    from ``write_line``, which the client treats as link loss. While Wi-Fi is
-    down the host cannot deliver STOP; the firmware's 3 s heartbeat is then the
-    only backstop, so the measured stop distance after a Wi-Fi drop matters.
+    A failed request raises OSError, which the client treats as link loss. While
+    Wi-Fi is down the host cannot deliver STOP, so the firmware's 3 s heartbeat
+    is the only backstop.
     """
 
     source_mode: Final = "hardware"

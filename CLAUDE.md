@@ -28,6 +28,13 @@ robotics, ML and edge deployment. "ML didn't help" is an acceptable result.
 - **Progress over paperwork.** Short notes, concrete next steps, no excessive
   hedging. Do the small step, record the result in a few lines, move on. Don't
   over-engineer: build only what the next result needs.
+- **Keep everything simple (decided 6 Nov 2026).** Commits, comments, docs,
+  reports and code: plain language, short sentences, no jargon unless it is
+  the right word and nothing simpler exists. No over-analysis, no extra
+  concepts, no edge cases nobody asked about, unless there is an obvious and
+  good reason, and then say the reason in one line. A report to the owner
+  should fit on one screen: what was done, what was found, what is next.
+  Reviewers at Hull will read this repo; write for them.
 - **People are not at risk (the balcony edge is the one exception); the hardware is.** Testing happens in my room, then on
   my balcony, with a small, slow robot, so skip heavyweight safety process (the AMP docs' version was
   for a cutting mower and does not apply). Put the care into **not damaging

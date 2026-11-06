@@ -1,9 +1,8 @@
 # Jetson case + power bank mount for the UGV01
 
-Two printed parts that stack the UGREEN PB205 power bank and the Waveshare
-Jetson case (JETSON-ORIN-CASE-A) on the UGV01's two 1020 rails. Nothing
-touches the deck, so the 40-pin header and screw heads underneath are cleared,
-and the case can face any direction (ports to the rear as built).
+Two printed parts stack the UGREEN PB205 power bank and the Waveshare Jetson case
+(JETSON-ORIN-CASE-A) on the UGV01's two 1020 rails. Nothing touches the deck, so the
+40-pin header and screw heads underneath are clear. Case ports face the rear as built.
 
 ```
           [ Jetson case 122 x 95 x 45 ]   <- 2 x M3 into the case's bottom holes
@@ -12,55 +11,45 @@ and the case can face any direction (ports to the rear as built).
    ===rail===                 ===rail===  <- 4 x M4 + drop-in T-nuts, rails 170 mm apart
 ```
 
-The bank's display and button are on its long side face, next to the port
-end (display ~13-28 mm from the end, button ~36-47 mm). Both side walls have a
-window over the rear 58 mm, down to a 4 mm stub, so they stay visible and
-reachable from the side of the robot. The walls still hold the bank sideways
-over the remaining 106 mm, plus the front wall, rear lip and lid.
-
-Stack height above the rail tops: 37 mm to the case bottom, 82 mm to the case top.
+The bank's display (~13-28 mm from the port end) and button (~36-47 mm) are on a long
+side. Side-wall windows over the rear 58 mm (4 mm stub) keep them reachable; the walls
+hold the other 106 mm. Height above the rails: 37 mm to case bottom, 82 mm to case top.
 
 ## Hardware
 
 | Where | Parts |
 | --- | --- |
 | Tray to rails | 4 x M4 drop-in T-nuts (20-series, 6 mm slot) + 4 x M4 x 8 screws |
-| Lid to tray | 4 x M3 x 10 or 12, self-tapping into the 2.6 mm boss holes (or set `BOSS_HOLE = 4.0` and use M3 heat-set inserts) |
-| Case to lid | 2 x M3 x 6 (up to 8), pan or countersunk, from below; the heads sit in pockets |
+| Lid to tray | 4 x M3 x 10 or 12, self-tapping into the 2.6 mm boss holes (or `BOSS_HOLE = 4.0` and M3 heat-set inserts) |
+| Case to lid | 2 x M3 x 6 (up to 8), pan or countersunk, from below; heads sit in pockets |
 
 ## Printing
 
-- PETG preferred (the bank gets warm, and the robot will sit in sunlight); PLA works indoors.
-- 0.2 mm layers, 4 perimeters, 30 % infill, no supports.
-- `tray.stl` prints as is (flat side down). Footprint 192 x 168 mm: check your bed.
-- `lid.stl` prints flipped (pocket side up) so the pockets and slots need no support.
+PETG preferred (a warm bank, sunlight); PLA works indoors. 0.2 mm layers, 4 perimeters,
+30 % infill, no supports. `tray.stl` prints flat side down (192 x 168 mm: check your
+bed). `lid.stl` prints flipped, pocket side up.
 
 ## Assembly
 
-1. Drop four T-nuts into the rail slots and bolt the tray down (slots are 6 mm long across the rail to absorb spacing error).
-2. Case upside down; put the lid on it with the pockets facing the case, and drive the two M3 screws through the slots into the case's threaded holes. The slots allow 60-70 mm hole spacing.
-3. Put the power bank in the tray, ports toward the rear (the low lip); the display and button stay reachable behind the lid.
-   Optional: a strip of 1-2 mm foam tape on the lid's underside, or on the floor, takes up the 1 mm play so nothing rattles.
-4. Lower lid + case onto the four bosses and fit the four M3 screws.
-5. Barrel-jack cable from the bank's rear ports up to the DC jack on the case's rear face.
+1. Bolt the tray to four T-nuts in the rails (the tray's slots are 6 mm long across
+   the rail to absorb spacing error).
+2. Case upside down, lid on it, pockets facing the case; two M3 screws go through the
+   slots (60-70 mm spacing) into the case's holes.
+3. Bank in the tray, ports toward the low rear lip. Optional: 1-2 mm foam tape takes up
+   the 1 mm play.
+4. Lower lid and case onto the four bosses; fit the four M3 screws.
+5. Barrel-jack cable from the bank's rear ports to the DC jack on the case's rear face.
 
 ## Changing it
 
-All dimensions are parameters at the top of `mount.py`. Re-run
-`python3 mount.py` to regenerate the STLs and `python3 render_iso.py` for the
-pictures. `boxcad.py` is a small pure-Python box-union modeller: holes are
-square, which is fine for printed parts.
-
-Sources for the dimensions: Waveshare case drawing (122 x 95 x 45), UGV01
-drawing (rails 170 mm centres, 144 mm long), UGREEN PB205 spec (160 x 80.8 x 26.7),
-and the case's bottom holes measured at ~65 mm.
+Dimensions are parameters at the top of `mount.py`. Run `python3 mount.py` for the STLs,
+`python3 render_iso.py` for pictures. `boxcad.py` is a small box-union modeller, so holes
+are square. Sources: Waveshare case drawing (122 x 95 x 45), UGV01 drawing (rails 170 mm
+centres, 144 mm long), PB205 spec (160 x 80.8 x 26.7), case holes measured at ~65 mm.
 
 ## As built (19 October 2026)
 
-- Tray bolted to the rails with the UGV01 kit's own drop-in T-nuts and screws.
-- The lid printed pocket side up; fitted pocket side down, which is correct.
-- Some of the suggested screw sizes were too big in practice; only M3 worked.
-- The two case screws are only hand-snug: the case's bottom holes are open
-  through to the board, so a too-long screw can touch it. Before tightening,
-  measure how deep the hole goes and use a screw that ends short of that, or
-  add a washer under the head.
+Tray bolted on with the UGV01 kit's own T-nuts and screws. Lid fitted pocket side down.
+Some suggested screw sizes were too big; only M3 worked. The two case screws are only
+hand-snug: the bottom holes are open through to the board, so measure the hole depth
+and use a screw that ends short of it, or add a washer.

@@ -1,48 +1,38 @@
 # Working on UGV Nav
 
+Read `CLAUDE.md` first. It holds the goal, the ML evaluation rules and the current
+plan, and it wins where this file is more cautious or formal.
+
 ## Scope and collaboration
 
-- Build toward bounded navigation in a small test area — first the owner's room,
-  then the owner's balcony (outdoor light) — with one evaluated ML contribution.
-  `CLAUDE.md` holds the current working decisions and wins where this file is
-  more cautious or formal.
-  Explain consequential engineering choices briefly, including their limits.
-- Inspect Git status and relevant files before editing; preserve existing work.
-  Commit finished work in small logical commits; do not push unless requested.
-- Treat AMP as a read-only technical reference. Its historical architecture,
-  governance, and plans are not requirements here.
-- The owner does the physical steps (wiring, power, flashing, driving); software
-  prepares them, keeps the robot inside declared bounds, and records what
-  happened. Do not purchase or provision paid services without authorization.
+- Check Git status and the relevant files before editing; preserve existing work.
+- Explain consequential engineering choices briefly, including their limits.
+- The owner does the physical steps (wiring, power, flashing, driving). Software
+  prepares them, keeps the robot in bounds and records what happened. Buy nothing
+  and set up no paid service without permission.
 
 ## Implementation
 
-- Build only the structure needed for the next observable result. Prefer
-  established libraries and simple modules over a new framework.
-- Use typed Python for orchestration unless another language serves a concrete
-  need. Keep names clear, functions small, and public interfaces documented.
-- Separate pure logic, device I/O, recording/replay, and simulation. Replay and
-  simulation must not acquire physical actuation as a side effect.
-- Make units, coordinate frames, timestamps, source mode, and validity explicit
-  in sensor/command contracts. Use monotonic time for local command deadlines.
-- Physical control must have bounded commands, validated inputs, stop behavior,
-  and timeout/link-loss handling. The guard is the only path to the motors.
-- Add dependencies only when used. Check target Python/OS/architecture and SDK
-  compatibility, pin a tested environment, and document the install/run path.
-- Record source revision, source paths, license/attribution, and changes when
-  importing code. Keep third-party notices and review dataset/model licenses.
+- Prefer established libraries and simple typed Python modules. Keep names clear,
+  functions small, public interfaces documented.
+- Separate pure logic, device I/O, recording/replay and simulation. Replay and
+  simulation must never move the robot.
+- Make units, frames, timestamps, source mode and validity explicit. Use monotonic
+  time for command deadlines.
+- Physical control needs bounded commands, validated inputs, stop behaviour and
+  timeout/link-loss handling.
+- Add dependencies only when used. Check Python, OS, architecture and SDK
+  compatibility, pin a tested environment, and document the install and run path.
+- When importing code, record source revision, paths, licence and changes. Keep
+  third-party notices. Review dataset and model licences.
 
 ## Evidence and privacy
 
-- Distinguish plans, prior reports, inspected artifacts, and tests performed now.
-  Record date, configuration, commands, observed result, and limitations.
-- Keep raw data, credentials, private correspondence, purchasing documents,
-  network addresses/host identities, and the AMP vault/history out of this repo.
-  Use ignored local storage; commit only reviewed, sanitized summaries/manifests.
-- For ML, separate recording sessions across train/validation/test; freeze the
-  test set before tuning. Record data/model versions and report failure cases.
-- Run the smallest meaningful verification for the change. Test control
-  boundaries and data integrity; do not add tests that just mirror prose/code.
-- Before finishing, review changed-file scope, `git diff --check`, secrets and
-  generated files. Inspect untracked files too. Report changes, verification,
-  limits, and the next concrete task.
+- Keep plans, prior reports and tests done now apart. Record date, configuration,
+  commands, result and limits.
+- Credentials, private messages, purchase documents, network addresses and the AMP
+  vault stay out of this repo. Commit only sanitized summaries.
+- Run the smallest meaningful verification. Test control boundaries and data
+  integrity. Don't add tests that mirror prose.
+- Before finishing, check `git diff --check`, secrets, generated and untracked
+  files. Report changes, checks, limits and the next task.

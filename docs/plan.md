@@ -2,8 +2,8 @@
 
 Written **29 September 2026**; updated **7 November 2026**. Step 1 (access and
 sensors) was done on 1–2 October. Steps 2–4 (safe control, record and replay,
-classical autonomy) are the plan to 19 November in `CLAUDE.md`, which wins here.
-This file covers what comes after.
+classical autonomy) are in `CLAUDE.md`, which wins here: the plan to 19 November,
+then full go-to-goal after it. This file covers what comes next.
 
 ## Delivery steps
 

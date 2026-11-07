@@ -17,7 +17,7 @@ Jetson power) and a printed mount modelled in Python
 ([`hardware/jetson-bank-mount/`](hardware/jetson-bank-mount/)). Development and local
 ML on a MacBook Pro M4 (48 GB); the Jetson is flashed from a ThinkPad P50 (Ubuntu).
 
-## Status (6 November 2026)
+## Status (7 November 2026)
 
 The Jetson sits on the robot's mount and the robot's controller answers over
 Wi-Fi. The first guarded drive passed with the tracks lifted.
@@ -38,8 +38,9 @@ Wi-Fi. The first guarded drive passed with the tracks lifted.
 - **Not yet:** no floor drive or turn; the Jetson is not yet powered from its
   battery bank; no keyboard driving (teleop), recording, perception or navigation
   code.
-- **Target for 19 November:** obstacle avoidance on a short route in the room, with
-  repeated trials and recorded results. The ML comparison follows.
+- **Target for 19 November:** driving from the keyboard (teleop) with camera and
+  feedback recorded, and an autonomous stop before an obstacle. Full go-to-goal and
+  the ML comparison follow.
 
 ## Working locally
 

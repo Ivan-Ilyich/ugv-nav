@@ -31,7 +31,8 @@ from .protocol import (
 MIN_LEASE_S: Final = 0.05
 MAX_LEASE_S: Final = 1.0
 DEFAULT_LEASE_S: Final = 0.5
-"""Default lease: at the 0.10 m/s default cap a stale command moves the robot at most 5 cm."""
+"""Default lease: a stale command runs about 0.5 s (5 cm at the 0.10 m/s default cap) before
+the stop; the stop itself took 0.26 s at 0.05 m/s (measured 6 Nov 2026, tracks lifted)."""
 
 
 class StopReason(Enum):

@@ -85,3 +85,7 @@ Dated history, newest at the bottom. Current state: `README.md`; measurements:
   0.05 m/s): host stop, lease stop and firmware heartbeat measured; one Wi-Fi
   timeout aborted the first step c try safely, and `--steps` was added to retry it
   ([results](hardware.md#first-guarded-drive-6-november-2026)).
+- **7 Nov:** plan to 19 Nov narrowed to teleop with recording and an autonomous stop
+  before an obstacle; full go-to-goal moves after 19 Nov. Decided: the client will
+  tolerate up to 2 consecutive failed requests before stopping (the lease still
+  bounds the risk).

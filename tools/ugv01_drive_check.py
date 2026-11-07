@@ -464,8 +464,8 @@ STEPS: Final = (
     ),
     Step(
         "c",
-        f"same drive, then NO stop is sent: only the firmware's {FIRMWARE_HEARTBEAT_TIMEOUT_S:.0f} s heartbeat, "
-        f"unverified on this robot, can stop it. Expected travel about "
+        f"same drive, then NO stop is sent: only the firmware's {FIRMWARE_HEARTBEAT_TIMEOUT_S:.0f} s heartbeat "
+        f"can stop it (on 6 Nov 2026 it stopped the tracks 3.26 s after the last T:1). Expected travel about "
         f"{travel_cm(DRIVE_S + FIRMWARE_HEARTBEAT_TIMEOUT_S)}. If it fails, the host sends STOP after "
         f"{HEARTBEAT_WATCH_S:.0f} s of silence: about {travel_cm(DRIVE_S + HEARTBEAT_WATCH_S)}.",
         DriveCheck.heartbeat_stop,

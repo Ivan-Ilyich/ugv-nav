@@ -2,7 +2,7 @@
 
 Two printed parts stack the UGREEN PB205 power bank and the Waveshare Jetson case
 (JETSON-ORIN-CASE-A) on the UGV01's two 1020 rails. Nothing touches the deck, so the
-40-pin header and screw heads underneath are clear. Case ports face the rear as built.
+deck's 40-pin header and screw heads stay clear.
 
 ```
           [ Jetson case 122 x 95 x 45 ]   <- 2 x M3 into the case's bottom holes
@@ -12,8 +12,9 @@ Two printed parts stack the UGREEN PB205 power bank and the Waveshare Jetson cas
 ```
 
 The bank's display (~13-28 mm from the port end) and button (~36-47 mm) are on a long
-side. Side-wall windows over the rear 58 mm (4 mm stub) keep them reachable; the walls
-hold the other 106 mm. Height above the rails: 37 mm to case bottom, 82 mm to case top.
+side (measured on 13 October, the button ends ~40 mm from the port end).
+Side-wall windows over the rear 58 mm (4 mm stub) keep them reachable; the walls hold
+the other 106 mm. Height above the rails: 37 mm to case bottom, 82 mm to case top.
 
 ## Hardware
 
@@ -23,22 +24,14 @@ hold the other 106 mm. Height above the rails: 37 mm to case bottom, 82 mm to ca
 | Lid to tray | 4 x M3 x 10 or 12, self-tapping into the 2.6 mm boss holes (or `BOSS_HOLE = 4.0` and M3 heat-set inserts) |
 | Case to lid | 2 x M3 x 6 (up to 8), pan or countersunk, from below; heads sit in pockets |
 
-## Printing
+## Printing and assembly
 
-PETG preferred (a warm bank, sunlight); PLA works indoors. 0.2 mm layers, 4 perimeters,
-30 % infill, no supports. `tray.stl` prints flat side down (192 x 168 mm: check your
-bed). `lid.stl` prints flipped, pocket side up.
-
-## Assembly
-
-1. Bolt the tray to four T-nuts in the rails (the tray's slots are 6 mm long across
-   the rail to absorb spacing error).
-2. Case upside down, lid on it, pockets facing the case; two M3 screws go through the
-   slots (60-70 mm spacing) into the case's holes.
-3. Bank in the tray, ports toward the low rear lip. Optional: 1-2 mm foam tape takes up
-   the 1 mm play.
-4. Lower lid and case onto the four bosses; fit the four M3 screws.
-5. Barrel-jack cable from the bank's rear ports to the DC jack on the case's rear face.
+PETG (a warm bank, sunlight; PLA works indoors): 0.2 mm layers, 4 perimeters, 30 %
+infill, no supports. `tray.stl` prints flat side down (192 x 168 mm: check your bed),
+`lid.stl` flipped, pocket side up. The tray's rail slots are 6 mm long to absorb
+spacing error, and the lid's case slots fit 60-70 mm hole spacing; 1-2 mm foam tape
+takes up the bank's 1 mm play. A barrel-jack cable runs from the bank's rear ports to
+the DC jack on the case's rear face.
 
 ## Changing it
 
@@ -50,6 +43,5 @@ centres, 144 mm long), PB205 spec (160 x 80.8 x 26.7), case holes measured at ~6
 ## As built (19 October 2026)
 
 Tray bolted on with the UGV01 kit's own T-nuts and screws. Lid fitted pocket side down.
-Some suggested screw sizes were too big; only M3 worked. The two case screws are only
-hand-snug: the bottom holes are open through to the board, so measure the hole depth
-and use a screw that ends short of it, or add a washer.
+Case ports face the rear. Some suggested screw sizes were too big; only M3 worked. The
+two case screws are only hand-snug: the bottom holes are open through to the board.

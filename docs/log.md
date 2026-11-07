@@ -1,75 +1,87 @@
 # Project log
 
-Dated history, newest at the bottom. `CLAUDE.md` holds the current state;
-measurements are in `docs/hardware.md`.
+Dated history, newest at the bottom. Current state: `README.md`; measurements:
+`docs/hardware.md`.
 
-## September–October 2026
-
-- **Aug 2026 (AMP):** simulated fleet backend and mission (FastAPI/WebSocket). Not
-  reused; see `docs/reuse.md`.
-- **4 Sep:** Jetson flashed from the P50, boots from NVMe, CUDA smoke test passed,
-  USB device-mode SSH worked.
-- **29 Sep:** repo started: README, AGENTS.md, docs. No code or commits yet.
+- **24 Aug (AMP):** the P50 ran the simulated fleet backend of AMP, a mowing startup
+  idea (FastAPI/WebSocket; 55 packets, not real telemetry). AMP was dropped on
+  1 Sep; its hardware carried over, its code was not reused ([assessment](reuse.md)).
+- **4 Sep:** Jetson flashed from the P50; boots from NVMe; CUDA smoke test passed;
+  USB device-mode SSH worked. Only one suitable USB cable, so Ethernet SSH was
+  proposed to keep it free for the camera.
+- **29 Sep:** repo started (README, AGENTS.md, docs); all equipment available.
 - **30 Sep:** decided to put the Jetson on **Wi-Fi**, not an Ethernet tether to the
   P50, so the USB cable is free for the camera and the robot can run untethered.
-- **30 Sep, blocker:** SSH P50 → Jetson over USB timed out. `lsusb` on the P50
-  showed no NVIDIA device. The Jetson fan spun; whether it booted was unknown.
-- **1 Oct, blocker resolved:** USB works on a different P50 port. Jetson on the home
-  router by Ethernet, with key-based SSH (`ssh jetson`, `ssh p50`). Baseline
-  unchanged, before that day's package changes: Ubuntu 24.04.4, kernel `6.8.12-1021-tegra`, L4T 39.2.1, CUDA 13.2, NVMe
-  root (4% used), clean `dpkg --audit`, no failed units, 45 °C idle, 25 W mode.
-- **1 Oct, Wi-Fi:** joined the 5 GHz network (−28 dBm, 866 Mbit/s link). Power saving
-  on: ping from the Mac 92 ms via Wi-Fi, 21 ms via Ethernet. Off: 20 ms against
-  30 ms (20 pings each). **Untethered check passed:** after `sudo systemctl reboot`
-  it rejoined Wi-Fi by itself and accepted SSH ~45 s later (22 ms avg ping).
-- **1 Oct, D435i enumeration passed:** `8086:0b3a`, Bus 2 Dev 3, at `5000M` (USB 3.2
-  descriptor, `bcdDevice 50.f1`). Stock `uvcvideo` binds `/dev/video0–5` and logs
-  "Unknown video format" for depth, so use librealsense's RSUSB backend.
-- **1 Oct, camera streaming:** apt 2.58.1 + pip wheel (V4L): RGB/depth 848×480@30,
-  **no IMU**. Built 2.58.1 from source with **RSUSB**: RGB, depth and IMU work, gyro
-  ~200 Hz, accel ~100 Hz, |g| 9.74 m/s². Depth restarts its frame counter at ~0.19 s;
-  in runs that follow an earlier IMU session, samples stamped before the session arrive
-  first (origin unconfirmed; also written into recordings); 6–9 gyro and 1–2 accel samples
-  were lost in the first 0.15 s on 1 Oct, none on 2 Oct (cause unknown). Check tool:
-  `tools/realsense_check.py`.
-- **1 Oct:** home-network maintenance pending (see `CLAUDE.local.md`).
-- **2 Oct:** packaged librealsense and its 44 helper packages removed, with the
-  RealSense apt repo and key. Commits now use the GitHub noreply address (repo-local
-  config). Test area decided: room, then balcony. Learning vault started in `vault/`
-  (gitignored, Obsidian).
-- **2 Oct, camera firmware 5.15.1.55 → 5.17.3.10:** flashed after a backup; the tool
-  crashed on exit (code 139) but the camera came back normally. Files in
-  `~/ugv-data/firmware/`. **Never install firmware ≥ 5.17.4.24 on SDK 2.58.1.**
-- **2 Oct, Jetson soak:** 20 min of streaming with CPU alignment: no lost frames,
-  48 → 50 °C, ~5.2 W (`tools/jetson_soak.py`).
+  SSH from the P50 over USB timed out (no NVIDIA device in the P50's `lsusb`).
+- **1 Oct:** USB SSH works on a different P50 port. Jetson on the home router by
+  Ethernet, then Wi-Fi, with key-based SSH (`ssh jetson`, `ssh p50`); fresh SSH
+  without a cable survives a reboot; D435i enumerates at USB 3
+  ([results](hardware.md#checkpoint-usb-independent-ssh-then-d435i-enumeration)).
+  Baseline re-checked unchanged with `date -u`, `cat /etc/os-release`, `uname -r`,
+  `head -n 1 /etc/nv_tegra_release`, `dpkg-query -W nvidia-l4t-core`,
+  `findmnt -no SOURCE,FSTYPE,TARGET /`, `df -h /`, `/usr/local/cuda/bin/nvcc --version`,
+  `dpkg --audit`, `apt-get -s check` and `systemctl --failed --no-pager`.
+- **1 Oct, camera:** the packaged SDK 2.58.1 (V4L) streams RGB and depth but no IMU;
+  a source build with RSUSB streams all three
+  ([results](hardware.md#streaming-setup-follows-enumeration)).
+- **1 Oct, RSUSB build:** tag `v2.58.1` (commit `bf2778061d5d`), configured with
+  `-DCMAKE_BUILD_TYPE=Release -DFORCE_RSUSB_BACKEND=ON -DBUILD_PYTHON_BINDINGS=ON
+  -DPYTHON_EXECUTABLE=<venv>/bin/python -DBUILD_WITH_CUDA=OFF -DBUILD_WITH_DDS=OFF
+  -DBUILD_EXAMPLES=OFF -DBUILD_GRAPHICAL_EXAMPLES=OFF -DBUILD_TOOLS=ON
+  -DBUILD_UNIT_TESTS=OFF` (configure downloads pybind11), with `CMAKE_INSTALL_PREFIX`,
+  `CMAKE_INSTALL_RPATH` (`<prefix>/lib`) and `PYTHON_INSTALL_DIR` inside the prefix
+  `~/ugv-nav/opt/librealsense-2.58.1-rsusb`. Binaries find their library through
+  `RUNPATH`; an `LD_LIBRARY_PATH` would override it. ~12 min at `-j4`, temperature
+  not monitored. The Python link failed once, cause unknown, and passed on a `-j1`
+  rebuild (spot readings ≤ 48 °C during the link steps). Tool environment:
+  `/usr/bin/python3 -m venv ~/ugv-nav/.venv` (Python 3.12.3) with `numpy` 2.5.3 and
+  a `.pth` file pointing at `<prefix>/lib/python3.12/site-packages` (PyPI wheel
+  removed). RSUSB needs the RealSense udev rules: from the `librealsense2-udev-rules`
+  package on 1 October, from the source tree's file since 2 October (below).
+- **1 Oct, Jetson changes:** hostname set; Wi-Fi profile added (autoconnect, power
+  saving off); RealSense apt repository and key added
+  (`/etc/apt/sources.list.d/librealsense.list`, `/etc/apt/keyrings/librealsenseai.gpg`);
+  `librealsense2`, `-gl`, `-utils` and `-udev-rules` 2.58.1 held, with 45 automatic
+  packages (GTK/X11/Mesa, `v4l-utils`, `at`). Build dependencies: `libusb-1.0-0-dev`,
+  `libssl-dev`, `pkg-config` (`git`, `python3.12-dev` already present). Upgraded as
+  dependencies: Mesa, GLib, bzip2, Python 3.12 (`3.12.3-1ubuntu0.17`), OpenSSL; no
+  L4T, CUDA or kernel package changed. Source tree `~/src/librealsense-2.58.1`;
+  11 recordings (6.1 GB) in `~/ugv-data/recordings`.
+- **2 Oct:** packaged SDK removed. The source tree's
+  `config/99-realsense-libusb.rules` installed as
+  `/etc/udev/rules.d/99-realsense-libusb.rules` (covers the D435i and its
+  firmware-recovery IDs); the 4 packages purged with `--autoremove` (48 in all: 44 of
+  the 45 automatic ones; `gir1.2-glib-2.0-dev` stays); apt repository and key
+  removed; `dpkg --audit` clean; all three sensors show. Udev rules reach a connected
+  camera only after `sudo udevadm control --reload-rules && sudo udevadm trigger
+  --subsystem-match=usb --attr-match=idVendor=8086 && sudo udevadm settle`. Test
+  area decided: room, then balcony.
+- **2 Oct, camera firmware 5.15.1.55 → 5.17.3.10:** device report, calibration dump
+  (`rs-enumerate-devices -c`) and a 5 s check saved; backup with `rs-fw-update -b`;
+  flashed with `rs-fw-update -f <image>`, detached from SSH, 08:12:20–08:12:53 UTC.
+  It printed "successfully updated to FW: 5.17.3.10", then crashed on exit (code 139,
+  segmentation fault); the camera had already reconnected normally
+  ([details](hardware.md#streaming-setup-follows-enumeration)).
+- **2 Oct:** 20-minute soak with CPU alignment, no lost frames
+  ([results](hardware.md#soak-test-2-october-2026)).
 - **2 Oct, UGV01 groundwork (no hardware):** protocol researched from firmware source
-  (`docs/ugv01-protocol.md`); adapter in `src/ugv_nav/ugv01/` (speed cap 0.10 m/s,
-  0.5 s lease, stop priority, re-arm) with a simulator; 111 tests; read-only probe
-  `tools/ugv01_probe.py` (not run).
-- **4–12 Oct:** Jetson case assembled with the Wi-Fi antennas on the card (socket 1
-  Main, 2 Aux); boots and answers SSH. Bank confirmed as UGREEN PB205 (90597A).
-  Printed mount designed; PETG print ordered 12 Oct. IMU calibration deferred (9 Oct).
+  ([notes](ugv01-protocol.md)); adapter in `src/ugv_nav/ugv01/` with a simulator;
+  111 tests; read-only probe `tools/ugv01_probe.py` (not run).
+- **4–12 Oct:** Jetson case assembled; boots and answers SSH. Bank confirmed as
+  UGREEN PB205. Printed mount designed; PETG print ordered 12 Oct. IMU calibration
+  deferred (9 Oct).
 - **13 Oct:** Hull confirmed that a public GitHub repo with a README is acceptable
-  evidence of Python programming for the MSc application (deadline 19 Nov). Decisions:
-  target classical obstacle avoidance in the room; plain Python, no ROS; push now, go
-  public at the first measured drive (5 Nov at the latest); keep `CLAUDE.md` and
-  `AGENTS.md` short.
-- **19 Oct:** mount assembled with the kit's own T-nuts (case screws hand-snug). It
-  covers the 40-pin header, so the Jetson–UGV01 link is **Wi-Fi/HTTP** (`/js`
-  endpoint). **First contact passed** from the Mac: `T:130` returned `T:1001`
-  (11.82 V, level), `T:126` returned IMU data; gyro z offset ≈ 4.0 at rest,
-  magnetometer inactive.
-- **19 Oct, later:** board joined the home 2.4 GHz network (`T:407`, AP password
-  changed); HTTP round trip 18–50 ms, median 19 ms. Added `HttpTransport` and `--http`
-  (134 tests).
-- **19 Oct, afternoon:** **probe passed from the Jetson**: 14 requests, 0 failed, 10
-  valid `T:1001`, median ≈ 18 ms (max 101 ms), 11.52 V. **Tilt check:** roll/pitch
-  match the accelerometer within 0.24° (r ≈ −1.5°, p ≈ −0.1°); the −20°/−26° after
-  `T:407` was transient. Gyro z varies −1.8 to +4.0 between samples, so the "offset
-  ≈ 4.0" was noise.
+  evidence of Python programming for the MSc application. Decided: classical
+  obstacle avoidance in the room by 19 Nov; plain Python, no ROS.
+- **19 Oct:** mount assembled ([mount](../hardware/jetson-bank-mount/README.md)). It
+  covers the Jetson's 40-pin header, so the Jetson–UGV01 link is **Wi-Fi/HTTP**.
+  First contact passed from the Mac on the board's access point; then the board
+  joined the home 2.4 GHz network (`T:407`, AP password changed). Added
+  `HttpTransport` and `--http` (134 tests). Probe from the Jetson and tilt check
+  passed ([results](hardware.md#ugv01-first-contact-19-october-2026)).
+- **23 Oct:** ruff clean across the repo (`uv run ruff check .`).
 - **6 Nov:** `tools/ugv01_drive_check.py` written, with 47 new tests, and checked
-  against a fake board on localhost.
-- **6 Nov, first guarded drive (tracks lifted, 0.05 m/s):** host stop and lease stop
-  0.26 s, firmware heartbeat 3.26 s after the last `T:1`; `T:130` polling did not
-  refresh it. 0.78 % of HTTP requests failed, and one aborted the first step c try
-  safely. Not yet on the floor.
+  against a fake board on localhost. **First guarded drive** (tracks lifted,
+  0.05 m/s): host stop, lease stop and firmware heartbeat measured; one Wi-Fi
+  timeout aborted the first step c try safely, and `--steps` was added to retry it
+  ([results](hardware.md#first-guarded-drive-6-november-2026)).

@@ -474,7 +474,7 @@ STEPS: Final = (
 
 PREFLIGHT: Final = """\
 UGV01 first guarded drive. THIS MOVES THE MOTORS. Before the first step:
-  - tracks off the ground, robot on a stand on the floor (never a desk), until a lifted run has passed;
+  - robot on the floor (never a desk) with at least 1 m clear ahead;
   - no browser tab open on the board's web page: it resends its last T:1 every 1.5 s;
   - hand on the power switch: the firmware has no latched emergency stop.
 Ctrl+C at any point sends stop."""

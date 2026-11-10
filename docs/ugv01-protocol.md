@@ -11,7 +11,7 @@ Written **2 October 2026** from firmware source and vendor docs; adapter in
 | Revision read | `d308df91b333a513f45a238bef9ba9a0a5edf64c` (2025-11-28, OLED `version: 0.95`). `uart_ctrl.h`, `movtion_module.h`, `json_cmd.h`, `ugv_config.h` unchanged since `f8fc989` (2024-03-24, `version: 0.90`) |
 | Licence | GPL-3.0; host apps `ugv_rpi` GPL-3.0, `ugv_jetson` AGPL-3.0. Only protocol facts were taken; **no firmware or host code is copied here** |
 | Factory image | `UGV01_FACTORY.zip` (sha256 `4aed26aa7001d80ba53ecec182800f92e39398af182b478ba0d769b2fd67d3cd`), app `bin/UGV01_V0.9.ino.bin` (sha256 `493084393c32c6177971d4726b94e8d9fb159d1efbe03bf9f40d9d2185655113`): same family, `version: 0.90` |
-| Robot model | `mainType` 3 = UGV01, the only closed-loop (PID, m/s) path. On this board a 0.05 m/s command read back about 0.05 m/s on the board's own estimate (measured, tracks lifted), as closed loop should. GitHub HEAD compiles 1 (open loop), so a reflash from HEAD would silently change the speed unit |
+| Robot model | `mainType` 3 = UGV01, the only closed-loop (PID, m/s) path. On this board a 0.05 m/s command read back about 0.05 m/s on the board's own estimate (measured on the floor), as closed loop should. GitHub HEAD compiles 1 (open loop), so a reflash from HEAD would silently change the speed unit |
 | This board | Version not read. Its replies (`"y":"null"`, no `temp`; measured) match builds from `b113287` (May 2024) to mid-2024, all labelled 0.90. `T:130` does not refresh its heartbeat (measured), so it is not `UGV01_BASE.zip`, an older, incompatible firmware (1,000,000 baud, `{"T":0}` stop, heartbeat refreshed by any JSON) |
 
 ## Link and framing
@@ -85,7 +85,7 @@ file, mission, Wi-Fi and ESP-NOW writes).
 | --- | --- | --- |
 | Speed limit | Default cap **0.10 m/s**, up to 0.5 m/s | 20 % of the wiki range |
 | Out-of-cap / NaN / inf | **Reject**, never clamp; guard disarms | A caller bug; clamping would change the turn ratio |
-| Command lease | **0.5 s** (0.05-1.0 allowed), on the client's monotonic clock | A stale command runs about 0.5 s (5 cm at the default cap) before the client stops it; the stop itself took 0.26 s at 0.05 m/s (measured, tracks lifted) |
+| Command lease | **0.5 s** (0.05-1.0 allowed), on the client's monotonic clock | A stale command runs about 0.5 s (5 cm at the default cap) before the client stops it; the stop itself took 0.26 s at 0.05 m/s (measured on the floor) |
 | Send rate | **10 Hz** motion + T:130 poll | Matches the PID's 100 ms sample; ~12 % of the serial link with echoes |
 | Link health | Up while valid T:1001 is ≤ 0.5 s old | Invalid feedback or an echo never counts. On serial it is round-trip evidence only if nothing else triggers T:1001 (`unsolicited_base_feedback` checks this) |
 | Stop | Written at once; resent for 1 s and while feedback shows motion; then quiet | Quiet lets the heartbeat act as backstop |

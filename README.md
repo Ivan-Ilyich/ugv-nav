@@ -17,12 +17,12 @@ Jetson power) and a printed mount modelled in Python
 ([`hardware/jetson-bank-mount/`](hardware/jetson-bank-mount/)). Development and local
 ML on a MacBook Pro M4 (48 GB); the Jetson is flashed from a ThinkPad P50 (Ubuntu).
 
-## Status (7 November 2026)
+## Status (10 November 2026)
 
 The Jetson sits on the robot's mount and the robot's controller answers over
-Wi-Fi. The first guarded drive passed with the tracks lifted.
+Wi-Fi. The first guarded drive passed on the floor.
 
-- **Stops at 0.05 m/s** ([results](docs/hardware.md#first-guarded-drive-6-november-2026)):
+- **Stops at 0.05 m/s on the floor** ([results](docs/hardware.md#first-guarded-drive-6-november-2026)):
   the tracks stopped 0.26 s after a host stop, 0.26 s after the stop the client
   sends when a command's 0.5 s lease runs out, and 3.26 s after the last command
   when only the controller's 3 s timeout could stop them. One trial each. 0.78 %
@@ -33,9 +33,9 @@ Wi-Fi. The first guarded drive passed with the tracks lifted.
 - **Software:** a typed adapter for the robot's controller: speed cap, each command
   expires after 0.5 s, a stop always wins, explicit re-arm; serial and HTTP
   transports; a simulator. 188 tests; `mypy --strict` and `ruff` clean. HTTP has
-  driven the real controller with the tracks lifted; all other motion control is
-  tested in simulation only.
-- **Not yet:** no floor drive or turn; the Jetson is not yet powered from its
+  driven the real robot on the floor; all other motion control is tested in
+  simulation only.
+- **Not yet:** no stop-distance measurement or turn; the Jetson is not yet powered from its
   battery bank; no keyboard driving (teleop), recording, perception or navigation
   code.
 - **Target for 19 November:** driving from the keyboard (teleop) with camera and

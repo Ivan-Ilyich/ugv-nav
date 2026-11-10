@@ -54,8 +54,7 @@ No heavyweight safety process; the care goes into **not damaging components**.
 - **Power:** check voltage and polarity before connecting any supply or barrel
   plug to the Jetson (9–20 V DC, centre positive) or the UGV board. Insert the
   18650s in the marked orientation. No damaged or dented cells.
-- **Falls:** first motor tests with the **tracks off the ground**; when driving,
-  stay on the floor, never on a desk or table.
+- **Falls:** drive on the floor only, never on a desk or table.
 - **Balcony:** first block every gap the robot could fit through or drive off, and
   drive there only after stop and timeout behaviour is verified indoors. A fall
   can hurt someone below.
@@ -88,7 +87,7 @@ No heavyweight safety process; the care goes into **not damaging components**.
 Target: teleop with recording, and an autonomous stop before an obstacle. Full
 go-to-goal moves to "After 19 November"; ML stays after the deadline.
 
-- **7–9 Nov:** floor drive at 0.05 and 0.10 m/s, tape-measured stop distance; one
+- **7–9 Nov:** tape-measured stop distance at 0.05 and 0.10 m/s; one
   turn to confirm left/right mapping.
 - **10–12 Nov:** client tolerates up to 2 consecutive failed requests before
   stopping (lease still bounds the risk); teleop CLI with recording of camera +
@@ -126,8 +125,8 @@ See "Status" in `README.md`; dated history in `docs/log.md`.
 
 ## Next steps
 
-1. **Drive check on the floor**, at least 1 m clear ahead: repeat at 0.05 m/s and measure
-   stop distance with a tape. Then the 0.10 m/s cap (change `DRIVE_SPEED_M_PER_S`).
+1. **Stop distance**, at least 1 m clear ahead: repeat the drive check at 0.05 m/s and
+   measure stop distance with a tape. Then the 0.10 m/s cap (change `DRIVE_SPEED_M_PER_S`).
    Retry an aborted step with `--steps`. Run command: `docs/hardware.md`. Then one
    turn to confirm left/right mapping.
 2. **Client:** tolerate up to 2 consecutive failed requests before stopping (the

@@ -24,7 +24,7 @@ Opening USB-C may reboot the board (see ``SerialTransport.open``). Over Wi-Fi
 (``--http``) there is no boot text or echo, so the listen is skipped and the
 summary shows request counts and round-trip times.
 
-This is a hardware action: run it with the tracks off the ground. The serial
+This is a hardware action; it sends only stop and status requests. The serial
 route is unverified:
 
     uv run python tools/ugv01_probe.py --http <board address>

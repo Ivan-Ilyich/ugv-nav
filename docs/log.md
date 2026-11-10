@@ -81,7 +81,7 @@ Dated history, newest at the bottom. Current state: `README.md`; measurements:
   passed ([results](hardware.md#ugv01-first-contact-19-october-2026)).
 - **23 Oct:** ruff clean across the repo (`uv run ruff check .`).
 - **6 Nov:** `tools/ugv01_drive_check.py` written, with 47 new tests, and checked
-  against a fake board on localhost. **First guarded drive** (tracks lifted,
+  against a fake board on localhost. **First guarded drive** (on the floor,
   0.05 m/s): host stop, lease stop and firmware heartbeat measured; one Wi-Fi
   timeout aborted the first step c try safely, and `--steps` was added to retry it
   ([results](hardware.md#first-guarded-drive-6-november-2026)).
@@ -89,3 +89,5 @@ Dated history, newest at the bottom. Current state: `README.md`; measurements:
   before an obstacle; full go-to-goal moves after 19 Nov. Decided: the client will
   tolerate up to 2 consecutive failed requests before stopping (the lease still
   bounds the risk).
+- **10 Nov:** correction: the 6 Nov drive was on the floor, not with the tracks
+  lifted. Notes updated; the measured stop times stand, now as under-load values.

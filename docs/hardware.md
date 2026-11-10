@@ -12,7 +12,7 @@ Status and measured results for each device, oldest first. Dated history:
 | Official Jetson PSU and stock fan | Lite-On `PA-1450-26`, 19 V / 2.37 A; fan ran (4 September); powered the 20-minute soak (2 October) | — |
 | Jetson network | Key-based SSH over Wi-Fi, no Ethernet or USB, survives a reboot (1 October) | Wi-Fi range on the moving robot |
 | D435i | USB 3; stationary indoor RGB/depth (V4L and RSUSB) and IMU (RSUSB only), 1 October; firmware 5.15.1.55 → 5.17.3.10, 2 October | IMU calibration, balcony depth, mount on the robot (so far only a mini tripod; the case's bundled CSI bracket is reported not to fit) |
-| UGV01 controller and drivetrain | Protocol from source, simulated adapter, 2 October ([notes](ugv01-protocol.md)); first contact 19 October; lifted drive and stops 6 November | Firmware version, floor drive and stop distance, the 0.10 m/s cap, turns, a real Wi-Fi loss, repeatability |
+| UGV01 controller and drivetrain | Protocol from source, simulated adapter, 2 October ([notes](ugv01-protocol.md)); first contact 19 October; floor drive and stops 6 November | Firmware version, stop distance, the 0.10 m/s cap, turns, a real Wi-Fi loss, repeatability |
 | Three Molicel P28A cells | Flat-top, unprotected, as Waveshare asks (the board protects them); inspected 6 November, no dents or damage; powered the 6 November drive | Charging |
 | PB205 / X553 / PD-to-barrel cable | Bank from its label: UGREEN PB205, P/N 90597A, 513 g. Cable recorded as Adafruit 5451 (fixed 15 V, falls back to 9 V or lower; the 20 V version is 5452; confirm from the label) | Negotiated voltage under load (~25 W peak + ~2 W camera), idle shut-off, plug fit (Jetson jack 5.5×2.5 mm), polarity, runtime |
 | Jetson enclosure | Waveshare 25334 (JETSON-ORIN-CASE-A), both IPEX4-to-SMA antennas on the Wi-Fi card (socket 1 Main, 2 Aux); boots, SSH works (12 October) | Thermals in the case |
@@ -194,7 +194,7 @@ procedure: `git show 4107b98:docs/hardware.md`, section "IMU calibration plan".
 
 ## UGV01 first contact (19 October 2026)
 
-Read-only, over Wi-Fi, tracks lifted. Board OLED at power-on: `AP: UGV`, `ST: OFF`,
+Read-only, over Wi-Fi, robot on the floor. Board OLED at power-on: `AP: UGV`, `ST: OFF`,
 `V: 11.11`. The Mac joined the board's access point and used
 `GET http://192.168.4.1/js?json=<command>`. After a stop (`{"T":1,"L":0,"R":0}`):
 
@@ -247,8 +247,10 @@ long is not measured. Round trips 21–170 ms (first request slowest).
 
 ## First guarded drive (6 November 2026)
 
-First motor movement. Tracks lifted, robot on a stand on the floor, owner at the
-power switch, cells inspected first. Both tracks forward at 0.05 m/s for 1.0 s, run
+First motor movement. Robot on the floor with clear space ahead, owner at the
+power switch, cells inspected first. (Recorded on 6 November as "tracks lifted";
+corrected 10 November: the tracks were on the floor, so these stops were under
+real load.) Both tracks forward at 0.05 m/s for 1.0 s, run
 from the Jetson over Wi-Fi. Battery 12.14 V before, 12.13 V after. Git `aceaf9f`, then
 `50a4ffd` for the step c retry:
 

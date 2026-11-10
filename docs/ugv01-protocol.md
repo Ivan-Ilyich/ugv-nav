@@ -87,7 +87,7 @@ file, mission, Wi-Fi and ESP-NOW writes).
 | Out-of-cap / NaN / inf | **Reject**, never clamp; guard disarms | A caller bug; clamping would change the turn ratio |
 | Command lease | **0.5 s** (0.05-1.0 allowed), on the client's monotonic clock | A stale command runs about 0.5 s (5 cm at the default cap) before the client stops it; the stop itself took 0.26 s at 0.05 m/s (measured on the floor) |
 | Send rate | **10 Hz** motion + T:130 poll | Matches the PID's 100 ms sample; ~12 % of the serial link with echoes |
-| Link health | Up while valid T:1001 is ≤ 0.5 s old | Invalid feedback or an echo never counts. On serial it is round-trip evidence only if nothing else triggers T:1001 (`unsolicited_base_feedback` checks this) |
+| Link health | One rule: stop and disarm when no valid T:1001 has arrived for **1.5 s** (0.5-3.0 allowed); disarmed until `arm()` | The board's 3 s heartbeat is the backstop. Measured Wi-Fi gaps reach 0.7 s, so 0.5 s guaranteed false stops. A failed request only shows as a feedback gap. Invalid feedback or an echo never counts. On serial it is round-trip evidence only if nothing else triggers T:1001 (`unsolicited_base_feedback` checks this) |
 | Stop | Written at once; resent for 1 s and while feedback shows motion; then quiet | Quiet lets the heartbeat act as backstop |
 | Re-arm | Explicit `arm()` plus a new command after any stop or fault | No stale command can resume; arming needs a live link |
 | Reconnect | Stop written at once when the link returns | Stops sent during an outage never arrived |

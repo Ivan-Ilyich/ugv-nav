@@ -216,9 +216,9 @@ def test_tracks_already_moving_refuse_to_arm() -> None:
     assert rig.motion_times() == [] and rig.check.results == []
 
 
-def test_link_failure_during_the_drive_aborts_and_the_stop_is_retried() -> None:
+def test_a_short_burst_of_failed_requests_does_not_abort_the_drive() -> None:
     rig = Rig()
-    failures = 3
+    failures = 3  # 0.3 s of failed requests, like the bursts measured over Wi-Fi
 
     def fail_after_motion_starts(line: bytes) -> None:
         nonlocal failures
@@ -227,9 +227,27 @@ def test_link_failure_during_the_drive_aborts_and_the_stop_is_retried() -> None:
             raise TimeoutError("timed out")
 
     rig.before_request = fail_after_motion_starts
-    assert not rig.run()
-    assert rig.check.results == []
+    assert rig.run()
+    assert [result.step for result in rig.check.results] == ["a", "b", "c"]
     assert rig.sim.track_speeds_m_per_s() == STOPPED
+
+
+def test_an_outage_past_the_end_of_the_drive_fails_the_step_and_the_stop_is_retried() -> None:
+    rig = Rig()
+    outage_end_s: float | None = None
+
+    def fail_after_motion_starts(line: bytes) -> None:
+        nonlocal outage_end_s
+        if outage_end_s is None and rig.recorder.phase == "drive" and rig.motion_times():
+            outage_end_s = rig.clock() + 2.0  # longer than the 1.0 s drive and the 1.5 s link timeout
+        if outage_end_s is not None and rig.clock() < outage_end_s:
+            raise TimeoutError("timed out")
+
+    rig.before_request = fail_after_motion_starts
+    assert not rig.run()
+    assert [result.step for result in rig.check.results] == ["a"] and rig.check.results[0].problem is not None
+    assert rig.sim.track_speeds_m_per_s() == STOPPED
+    assert rig.sim.heartbeat_stops == 0  # the host's stop arrived when the link came back
     assert rig.wheel_lines_since(0)[-1] == STOP_LINE
 
 

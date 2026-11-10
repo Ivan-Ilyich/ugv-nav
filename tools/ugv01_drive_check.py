@@ -371,7 +371,8 @@ class DriveCheck:
         """Hold both tracks at the drive speed; return when the last command was accepted.
 
         ``DRIVE_S`` counts from the first T:1 written, which can trail arming by
-        up to one send period. Ends by itself: the guard disarms if writes fail.
+        up to one send period. Aborts if the guard disarms, for example after
+        ``link_timeout_s`` without feedback.
         """
         self._recorder.phase = "drive"
         if not self._client.arm():

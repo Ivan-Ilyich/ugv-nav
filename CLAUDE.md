@@ -89,9 +89,10 @@ go-to-goal moves to "After 19 November"; ML stays after the deadline.
 
 - **7–9 Nov:** tape-measured stop distance at 0.05 and 0.10 m/s; one
   turn to confirm left/right mapping.
-- **10–12 Nov:** client tolerates up to 2 consecutive failed requests before
-  stopping (lease still bounds the risk); teleop CLI with recording of camera +
-  feedback.
+- **10–12 Nov:** client stops and disarms only when no valid feedback has
+  arrived for 1.5 s (done 10 Nov; the 0.5 s lease is unchanged). The board's 3 s
+  heartbeat is the backstop; measured Wi-Fi gaps reach 0.7 s, so 0.5 s guaranteed
+  false stops. Then the teleop CLI with recording of camera + feedback.
 - **13–16 Nov:** camera mounted; depth → "obstacle ahead" → stop, on a recording
   first, then live.
 - **17–19 Nov:** README results, GIF, walkthrough rehearsal, submit.
@@ -129,9 +130,8 @@ See "Status" in `README.md`; dated history in `docs/log.md`.
    measure stop distance with a tape. Then the 0.10 m/s cap (change `DRIVE_SPEED_M_PER_S`).
    Retry an aborted step with `--steps`. Run command: `docs/hardware.md`. Then one
    turn to confirm left/right mapping.
-2. **Client:** tolerate up to 2 consecutive failed requests before stopping (the
-   lease still bounds the risk). Find out why 0.78 % of HTTP requests fail, and test
-   a real Wi-Fi loss and reconnect.
+2. **Client:** test a real Wi-Fi loss and reconnect with the 1.5 s link timeout,
+   and find out why 0.78 % of HTTP requests fail.
 3. **Teleop CLI** with recording of camera + feedback (`sensors/`, `recording/`). A
    recording counts when its replay matches frame counts and feedback events and
    shows dropped or stale data.

@@ -32,7 +32,7 @@ Wi-Fi. The first guarded drive passed on the floor.
   ([results](docs/hardware.md#streaming-setup-follows-enumeration)).
 - **Software:** a typed adapter for the robot's controller: speed cap, each command
   expires after 0.5 s, a stop always wins, explicit re-arm; serial and HTTP
-  transports; a simulator. 188 tests; `mypy --strict` and `ruff` clean. HTTP has
+  transports; a simulator. 193 tests; `mypy --strict` and `ruff` clean. HTTP has
   driven the real robot on the floor; all other motion control is tested in
   simulation only.
 - **Not yet:** no stop-distance measurement or turn; the Jetson is not yet powered from its

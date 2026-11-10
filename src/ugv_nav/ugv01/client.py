@@ -7,7 +7,7 @@ against the time of the write itself. Each ``tick()``:
 1. reads up to ``max_lines_per_tick`` board lines and keeps the latest valid
    T:1001 feedback, stamped with that tick's clock reading;
 2. marks the link up while that feedback is at most ``link_timeout_s`` old,
-   and down (stop, disarm) otherwise;
+   and down otherwise: stop and disarm, until ``arm()`` is called again;
 3. writes the guard's output: a motion command at most once per
    ``send_period_s``; a stop at once on every transition to stop, then each
    period during the stop-resend window or while fresh feedback shows motion;
@@ -20,10 +20,11 @@ A clock reading that is not finite or earlier than the previous one latches a
 fault: the client writes STOP, disarms and ignores that call. Motion then needs
 a new ``arm()`` and command.
 
-Transport errors (OSError) mark the link down instead of propagating. When the
-link returns, a stop is written at once: stops sent during an outage never
-arrived, and the board keeps its last setpoint until its heartbeat expires
-(about 3 s).
+Feedback age is the only link-health rule. Transport errors (OSError) are
+recorded in ``io_error`` and never propagate; a failed request already shows as
+a feedback gap. When the link returns, a stop is written at once: stops sent
+during an outage never arrived, and the board keeps its last setpoint until its
+heartbeat expires (about 3 s).
 
 Any byte received before the boot mission ends aborts it, so start the client
 only after the board has finished booting.
@@ -55,6 +56,12 @@ if TYPE_CHECKING:  # the client never needs the serial driver at run time
 DEFAULT_SEND_PERIOD_S: Final = 0.1
 """10 Hz: matches the firmware PID's 100 ms sample time; command, poll and echo use ~12 % of 115200 baud."""
 
+MIN_LINK_TIMEOUT_S: Final = 0.5
+MAX_LINK_TIMEOUT_S: Final = 3.0
+DEFAULT_LINK_TIMEOUT_S: Final = 1.5
+"""Stop when no valid T:1001 has arrived for this long. The board's 3 s heartbeat is the backstop;
+measured Wi-Fi feedback gaps reach 0.7 s, so 0.5 s guaranteed false stops."""
+
 
 @dataclass(frozen=True, slots=True)
 class ClientConfig:
@@ -63,15 +70,17 @@ class ClientConfig:
     speed_cap_m_per_s: float = DEFAULT_SPEED_CAP_M_PER_S
     lease_s: float = DEFAULT_LEASE_S
     send_period_s: float = DEFAULT_SEND_PERIOD_S
-    link_timeout_s: float = 0.5
+    link_timeout_s: float = DEFAULT_LINK_TIMEOUT_S
     stop_resend_s: float = 1.0
     max_lines_per_tick: int = 50
 
     def __post_init__(self) -> None:
         if not 0.02 <= self.send_period_s <= 1.0:
             raise ValueError("send_period_s must be in [0.02, 1.0]")
-        if not 2 * self.send_period_s <= self.link_timeout_s <= 2.0:
-            raise ValueError("link_timeout_s must be in [2 * send_period_s, 2.0]")
+        if not MIN_LINK_TIMEOUT_S <= self.link_timeout_s <= MAX_LINK_TIMEOUT_S:
+            raise ValueError(f"link_timeout_s must be in [{MIN_LINK_TIMEOUT_S}, {MAX_LINK_TIMEOUT_S}] s")
+        if self.link_timeout_s < 2 * self.send_period_s:
+            raise ValueError("link_timeout_s must be at least 2 * send_period_s")
         if not 0.0 <= self.stop_resend_s <= 5.0:
             raise ValueError("stop_resend_s must be in [0, 5]")
         if self.max_lines_per_tick < 1:
@@ -185,7 +194,7 @@ class UGV01Client:
         try:
             self._transport.write_line(encode_command(STOP))
         except OSError as error:
-            self._io_error = f"{type(error).__name__}: {error}"
+            self._record_io_error(error)
         return None
 
     def _status_at(self, now_s: float | None) -> ClientStatus:
@@ -208,7 +217,7 @@ class UGV01Client:
             try:
                 line = self._transport.read_line(0.0)
             except OSError as error:
-                self._link_failed(error, now_s)
+                self._record_io_error(error)
                 return
             if line is None:
                 return
@@ -241,11 +250,8 @@ class UGV01Client:
         elif not fresh and self._guard.link_up:
             self._guard.link_lost(now_s)
 
-    def _link_failed(self, error: OSError, now_s: float) -> None:
+    def _record_io_error(self, error: OSError) -> None:
         self._io_error = f"{type(error).__name__}: {error}"
-        self._last_feedback = None  # the link counts as down until new feedback arrives
-        self._stop_written = False
-        self._guard.link_lost(now_s)
 
     def _send(self, output: WheelSpeedCommand, now_s: float) -> None:
         due = self._next_send_s is None or now_s >= self._next_send_s
@@ -257,7 +263,7 @@ class UGV01Client:
         elif due:
             self._write_wheels(output, now_s, new_stop=False)
         if due:
-            self._write(encode_command(FeedbackRequest.BASE), now_s)
+            self._write(encode_command(FeedbackRequest.BASE))
             self._next_send_s = now_s + self._config.send_period_s
 
     def _stop_needs_resend(self, now_s: float) -> bool:
@@ -268,7 +274,8 @@ class UGV01Client:
 
     def _write_wheels(self, command: WheelSpeedCommand, now_s: float, *, new_stop: bool) -> None:
         line = encode_command(command, speed_cap_m_per_s=self._config.speed_cap_m_per_s)
-        if not self._write(line, now_s):
+        if not self._write(line):
+            self._stop_written = False  # a failed request may still have reached the board
             return
         if command.is_stop:
             if new_stop:
@@ -277,10 +284,10 @@ class UGV01Client:
         else:
             self._stop_written = False
 
-    def _write(self, line: bytes, now_s: float) -> bool:
+    def _write(self, line: bytes) -> bool:
         try:
             self._transport.write_line(line)
         except OSError as error:
-            self._link_failed(error, now_s)
+            self._record_io_error(error)
             return False
         return True

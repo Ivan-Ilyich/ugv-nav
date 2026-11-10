@@ -136,7 +136,7 @@ def test_invalid_clock_readings_write_stop_and_disarm_without_wedging_the_poll()
     written = len(rig.sim.host_lines)
     status = rig.run(0.3)
     assert status.link_up and rig.sim.host_lines[written:].count(POLL_LINE) >= 2
-    status = rig.run(1.0)  # longer than link_timeout_s: only fresh polls keep the link up
+    status = rig.run(2.0)  # longer than link_timeout_s: only fresh polls keep the link up
     assert status.link_up and not status.armed
     assert rig.client.arm()
 
@@ -153,7 +153,14 @@ def test_invalid_speed_is_rejected_and_the_next_tick_writes_stop() -> None:
 
 
 @pytest.mark.parametrize(
-    "limits", [{"send_period_s": math.nan}, {"link_timeout_s": 0.1}, {"stop_resend_s": math.nan}]
+    "limits",
+    [
+        {"send_period_s": math.nan},
+        {"link_timeout_s": 0.4},
+        {"link_timeout_s": 3.1},
+        {"send_period_s": 0.5, "link_timeout_s": 0.5},
+        {"stop_resend_s": math.nan},
+    ],
 )
 def test_client_limits_are_bounded(limits: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
@@ -203,7 +210,7 @@ def test_silent_link_loss_stops_and_reconnect_sends_stop_never_stale_motion() ->
     rig = Rig()
     rig.start_moving(0.08, 0.08)
     rig.sim.set_link_up(False)  # cut wire: no errors, just silence
-    status = rig.run(1.0, planner=(0.08, 0.08))
+    status = rig.run(2.0, planner=(0.08, 0.08))  # longer than the 1.5 s link timeout
     assert not status.link_up and not status.armed
     assert status.stop_reason is StopReason.LINK_LOST
     assert rig.sim.track_speeds_m_per_s() == (0.08, 0.08)  # the board never heard the stop
@@ -221,16 +228,33 @@ def test_silent_link_loss_stops_and_reconnect_sends_stop_never_stale_motion() ->
     assert rig.sim.track_speeds_m_per_s() == (0.03, 0.03)
 
 
-def test_transport_errors_mark_the_link_down_without_raising() -> None:
+@pytest.mark.parametrize(("link_timeout_s", "stops"), [(1.5, False), (0.5, True)])
+def test_a_feedback_gap_stops_only_when_longer_than_the_link_timeout(link_timeout_s: float, stops: bool) -> None:
+    rig = Rig(ClientConfig(link_timeout_s=link_timeout_s))
+    rig.start_moving(0.08, 0.08)
+    rig.sim.set_link_up(False)
+    status = rig.run(0.7, planner=(0.08, 0.08))  # the longest Wi-Fi feedback gap measured (0.72 s)
+    assert status.armed is not stops and status.link_up is not stops
+    first = len(rig.sim.motion_log)
+    rig.sim.set_link_up(True)
+    rig.run(0.3, planner=(0.08, 0.08))
+    expected = STOPPED if stops else (0.08, 0.08)
+    assert set(rig.motion_received_since(first)) == {expected}
+
+
+def test_transport_errors_show_as_a_feedback_gap_and_never_raise() -> None:
     rig = Rig()
     rig.start_moving(0.08, 0.08)
     rig.sim.set_disconnected(True)  # unplugged adapter: every I/O call raises
-    status = rig.run(0.5, planner=(0.08, 0.08))
-    assert not status.link_up and not status.armed and status.io_error is not None
+    status = rig.run(1.0, planner=(0.08, 0.08))
+    assert status.link_up and status.armed and status.io_error is not None  # no feedback gap over 1.5 s yet
+    status = rig.run(1.0, planner=(0.08, 0.08))
+    assert not status.link_up and not status.armed and status.stop_reason is StopReason.LINK_LOST
     rig.sim.set_disconnected(False)
     status = rig.run(0.5, planner=(0.08, 0.08))
-    assert status.link_up and not status.armed
-    assert rig.sim.track_speeds_m_per_s() == STOPPED
+    assert status.link_up and not status.armed  # stays disarmed until arm()
+    assert rig.client.send_wheel_speeds(0.08, 0.08) is SubmitResult.REJECTED_NOT_ARMED
+    assert rig.sim.track_speeds_m_per_s() == STOPPED and rig.sim.heartbeat_stops == 0
 
 
 def test_malformed_board_output_is_tolerated() -> None:

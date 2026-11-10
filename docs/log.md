@@ -91,3 +91,7 @@ Dated history, newest at the bottom. Current state: `README.md`; measurements:
   bounds the risk).
 - **10 Nov:** correction: the 6 Nov drive was on the floor, not with the tracks
   lifted. Notes updated; the measured stop times stand, now as under-load values.
+- **10 Nov:** replaced the 7 Nov decision with one link-health rule: stop and
+  disarm when no valid feedback has arrived for 1.5 s (0.5-3.0 allowed). A failed
+  request no longer stops the robot by itself. The board's 3 s heartbeat is the
+  backstop; measured Wi-Fi gaps reach 0.7 s, so 0.5 s guaranteed false stops.

@@ -183,9 +183,9 @@ class HttpTransport:
     queues the reply body as one line for ``read_line``. Nothing arrives
     unsolicited, and there is no echo or debug text on this path.
 
-    A failed request raises OSError, which the client treats as link loss. While
-    Wi-Fi is down the host cannot deliver STOP, so the firmware's 3 s heartbeat
-    is the only backstop.
+    A failed request raises OSError, which the client records; it stops only
+    when feedback stops arriving. While Wi-Fi is down the host cannot deliver
+    STOP, so the firmware's 3 s heartbeat is the only backstop.
     """
 
     source_mode: Final = "hardware"
